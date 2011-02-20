@@ -1,0 +1,338 @@
+<?php
+// $Id: uc_worldpay.module,v 1.2 2008/12/05 18:28:29 rareface Exp $
+
+/**
+ * @file
+ * Integrates Worldpay's redirected payment service with Ubercart.
+ *
+ * Original development sponsored by www.catorg.co.uk.
+ */
+
+/**
+ * Implementation of hook_menu().
+ */
+function uc_worldpay_menu() {
+  $items['cart/worldpay/complete'] = array(
+    'title' => t('Order complete'),
+    'page callback' => 'uc_worldpay_complete',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_payment_method().
+ */
+function uc_worldpay_payment_method() {  
+  $methods[] = array(
+    'id' => 'worldpay',
+    'name' => t('Worldpay'),
+    'title' => theme('uc_worldpay_cards'),
+    'desc' => t('Redirect to Worldpay to pay by credit card or eCheck.'),
+    'callback' => 'uc_payment_method_worldpay',
+    'weight' => 3,
+    'checkout' => TRUE,
+    'no_gateway' => TRUE,
+  );
+
+  return $methods;
+}
+
+function theme_uc_worldpay_cards() {
+  $image_path = drupal_get_path('module', 'uc_worldpay') .'/images/';
+  $title = variable_get('uc_worldpay_method_title', t('Worldpay'));
+  $output = theme('image', $image_path .'worldpay.png', $title .': ', $title, array('style' => 'position:relative; top:6px;'));
+
+  $card_types = variable_get('uc_worldpay_payment_methods', array('visa', 'electron', 'mastercard', 'maestro', 'switch', 'solo'));
+  foreach ($card_types as $card => $title) {
+    if ($title != "0") {
+      $output .= theme('image', $image_path . $card .'.gif', '', '', array('style' => 'position:relative; top:5px; margin-right:4px;'));
+    }
+  }
+
+  return $output;
+}
+
+/**
+ * Payment method settings.
+ */
+function uc_payment_method_worldpay($op, &$arg1) {
+  switch ($op) {
+
+    case 'cart-process':
+      $_SESSION['pay_method'] = $_POST['pay_method'];
+      return;
+
+    case 'settings':
+      $form['help_text']['worldpay_settings'] = array(
+        '#type' => 'item',
+        '#prefix' => '<div class="help">',
+        '#value' => t('<h4><strong>Installation instructions</strong></h4>
+          <p>For this module to work properly you must configure a few specific options in your Worldpay account under <em>Installation Administration</em> settings:</p>
+          <ul><li><strong>Payment Response URL</strong> should be set to: %response_url</li>
+          <li><strong>Payment Response enabled?</strong> should be <em>enabled</em></li>
+          <li><strong>Enable the Shopper Response</strong> should be <em>enabled</em> to get the Ubercart response page (optional)',
+          array('%response_url' => url('cart/worldpay/complete', array()))),
+        '#suffix' => '</div>',
+      );
+      $form['uc_worldpay_sid'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Installation ID'),
+        '#default_value' => variable_get('uc_worldpay_sid', ''),
+        '#size' => 16,
+      );
+      $form['uc_worldpay_debug'] = array(
+        '#type' => 'select',
+        '#title' => t('Debug mode'),
+        '#multiple' => FALSE,
+        '#options' => array('log' => t('Log'), 'screen' => t('Screen'), 'both' => t('Both'), 'none' => t('None')),
+        '#default_value' => variable_get('uc_worldpay_debug', 'log'),
+      );
+      $form['uc_worldpay_checkout_button'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Order review submit button text'),
+        '#description' => t('Alter the text of the submit button on the review order page.'),
+        '#default_value' => variable_get('uc_worldpay_checkout_button', t('Submit Order')),
+      );
+      $form['payment_methods'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Payment methods'),
+        '#description' => t('Select the payment methods to display in checkout.'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['payment_methods']['uc_worldpay_payment_methods'] = array(
+        '#type' => 'checkboxes',
+        '#default_value' => variable_get('uc_worldpay_payment_methods', array('visa', 'electron', 'mastercard', 'maestro', 'switch', 'solo')),
+        '#options' => array(
+          'visa' => t('Visa'),
+          'electron' => t('Visa Electron'),
+          'mastercard' => t('Mastercard'),
+          'maestro' => t('Maestro'),
+          'switch' => t('Switch'), 
+          'solo' => t('Solo'),
+          'amex' => t('Amex'),
+          'diners' => t('Diners'),
+          'jcb' => t('JCB'),
+          'elv' => t('ELV'),
+          'laser' => t('Laser'),
+        ),
+      );
+      $form['payment_parameters'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Payment parameters'),
+        '#description' => t('These options control what parameters are sent to Worldpay when the customer submits the order.'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['payment_parameters']['uc_worldpay_test'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable test mode'),
+        '#default_value' => variable_get('uc_worldpay_test', TRUE),
+      );
+      $disabled = (!variable_get('uc_worldpay_test', TRUE)) ? TRUE : FALSE;      
+      $form['payment_parameters']['uc_worldpay_test_result'] = array(
+        '#type' => 'select', 
+        '#title' => t('Test mode result'),
+        '#description' => t('Specify the required transaction result when working in test mode.'),
+        '#default_value' => variable_get('uc_worldpay_test_result', 'AUTHORISED'),
+        '#options' => array('AUTHORISED' => 'Authorised', 'REFUSED' => 'Refused', 'ERROR' => 'Error', 'CAPTURED' => 'Captured'),
+        '#disabled' => $disabled,
+      );
+      $form['payment_parameters']['uc_worldpay_desc'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Submit the cart contents as the order description'),
+        '#description' => t('Setting this option to true will display the cart contents on the payment page. This could help to reassure customers of exactly what they are paying for.'),
+        '#default_value' => variable_get('uc_worldpay_desc', FALSE),
+      );
+      $form['payment_parameters']['uc_worldpay_edit_contact'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable editing of contact details on the payment page.'),
+        '#default_value' => variable_get('uc_worldpay_show_contact', TRUE),
+      );
+      $form['payment_parameters']['uc_worldpay_show_contact'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Show the contact details on the payment page.'),
+        '#default_value' => variable_get('uc_worldpay_show_contact', TRUE),
+        '#disabled' => variable_get('uc_worldpay_show_contact', TRUE),
+      );
+      $form['payment_parameters']['uc_worldpay_lang'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Payment page language'),
+        '#description' => t('Specify the payment page language. Enter a 2-character ISO 639 language code, with optional regionalisation using 2-character country code separated by hyphen. For example "en-GB" specifies UK English.'),
+        '#size' => 8,
+        '#maxlength' => 6,
+        '#default_value' => variable_get('uc_worldpay_lang', 'en-GB'),
+      );
+      return $form;
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function uc_worldpay_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
+    $order = uc_order_load($order_id);
+
+    if ($order->payment_method == 'worldpay') {
+
+      $country_data = uc_get_country_data(array('country_id' => $order->billing_country));
+      $country = $country_data[0]['country_iso_code_2'];
+
+      $cart_contents = uc_cart_get_contents();
+      foreach ($cart_contents as $item) {
+        $cart_items[] = $item->qty .'x '. $item->title;
+      }
+
+      $uc_worldpay_name = substr($order->billing_first_name .' '. $order->billing_last_name, 0, 128);
+
+      $data = array();
+      if (variable_get('uc_worldpay_test', TRUE)) {
+        $uc_worldpay_name = variable_get('uc_worldpay_test_result', 'AUTHORISED');
+        $data = array(
+          'testMode' => '100',
+        );
+      }
+
+      $data += array(
+        'instId' => variable_get('uc_worldpay_sid', ''),
+        'amount' => uc_currency_format($order->order_total, FALSE, FALSE, '.'),
+        'cartId' => $order->order_id,
+        'currency' =>  variable_get('uc_currency_code', 'USD'),
+        'name' =>  $uc_worldpay_name,
+        'address' => ($order->billing_street1 ? $order->billing_street1 .',' : "\n")
+                   . ($order->billing_street2 ? $order->billing_street2 .',' : "\n")
+                   . ($order->billing_city ? $order->billing_city : ''),
+        'state' => uc_get_zone_code($order->billing_zone),
+        'postcode' => $order->billing_postal_code,
+        'country' => $country,
+        'email' => $order->primary_email,
+        'tel' => $order->billing_phone,
+        'M_uc_cart_id' => uc_cart_get_id(),
+        'lang' => variable_get('uc_worldpay_lang', 'en-GB'),
+        'M_http_host' => $_SERVER['HTTP_HOST'],
+      );
+
+      if (variable_get('uc_worldpay_desc', FALSE)) {
+        $data += array(
+          'desc' => t("Cart contents: \n!cart", array('!cart' => implode(",\n", $cart_items)))
+        );
+      }
+
+      if (!variable_get('uc_worldpay_edit_contact', TRUE)) {
+        $data += array(
+          'fixContact' => '',
+        );
+      }
+      
+      if (!variable_get('uc_worldpay_show_contact', TRUE)) {
+        $data += array(
+          'hideContact' => '',
+        );
+      }
+
+      foreach ($data as $name => $value) {
+        $form[$name] = array(
+          '#type' => 'hidden',
+          '#value' => $value,
+        );
+      }
+
+      $test_server = 'https://select-test.worldpay.com/wcc/purchase';
+      $live_server = 'https://select.worldpay.com/wcc/purchase';
+      $form['#action'] = (variable_get('uc_worldpay_test', TRUE)) ? $test_server : $live_server;
+      $form['submit'] = array(
+        '#type' => 'submit',
+        '#name' => '',
+        '#value' => variable_get('uc_worldpay_checkout_button', t('Submit Order')),
+      );
+    }
+  }
+}
+
+function uc_worldpay_complete($cart_id = 0) {
+  $cart_id = $_POST['cartId'];
+  $amount = $_POST['amount'];
+  $trans_status = $_POST['transStatus'];
+  $card_type = $_POST['cardType'];
+  $uc_cart_id = $_POST['M_uc_cart_id'];
+
+  // Stop orders being processed for orders from different hosts.
+  if ($_SERVER['HTTP_HOST'] != $_POST['M_http_host']) {
+    print t('There was an error with the transaction. The host did not match.');
+    exit();
+  }
+
+  // Log a new order notification to watchdog.
+  $log_entry = t('New order notification for order !order_id.', array('!order_id' => $cart_id));
+  $message = t('Returned parameters: <pre>!post</pre>', array('!post' => print_r($_POST, TRUE)));
+
+  // If debug mode is set appropriately, append the returned parameters to the log entry.
+  $debug = variable_get('uc_worldpay_debug', 'log');
+  if ($debug == 'log' || $debug == 'both') {
+    $log_entry .= '<br/>'. $message;
+  }
+  watchdog('uc_worldpay', $log_entry);
+
+  // If debug mode is set appropriately, print the returned parameters to the screen.
+  if ($debug == 'screen' || $debug == 'both') {
+    $output .= $message;
+  }
+
+  // If the order could not be loaded print an error message and exit.
+  if (!$order = uc_order_load($cart_id)) {
+    print t('The order could not be found and this transaction cannot continue.');
+    exit();
+  }
+
+  // If the status of the order is not 'in_checkout' print an error and exit.
+  if (uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
+    print t('An error has occurred during payment.  Please contact us to ensure your order has submitted.');
+    exit();
+  }
+
+  if (is_numeric($amount)) {
+    switch ($trans_status) {
+      case 'Y':
+        $output .= t('Your order is complete and payment has been confirmed.');
+        $comment = t('Paid by !type, Worldpay order #!order.', array('!type' => $card_type , '!order' => $cart_id));
+        uc_payment_enter($order->order_id, 'Worldpay', $amount, 0, NULL, $comment);
+        break;
+      case 'C':
+        $output .= t('Your order has been cancelled.');
+        drupal_set_message(t('Your order has been cancelled.'));
+        uc_order_comment_save($order->order_id, 0, t('Payment cancelled by user.'), 'admin');
+        print $output;
+        exit();
+        break;
+      default:
+        $output .= t('Your order is pending.');
+        drupal_set_message(t('Your order will be processed as soon as your payment clears at Worldpay.'));
+        uc_order_comment_save($order->order_id, 0, t('!type payment is pending approval at Worldpay.', array('!type' => $card_type)), 'admin');
+        break;
+    }
+  }
+
+  $output .= uc_cart_complete_sale($order);
+  uc_cart_empty($uc_cart_id);
+
+  // Add a comment to let sales team know this came in through the site.
+  uc_order_comment_save($order->order_id, 0, t('Order created through website.'), 'admin');
+
+  print $output;
+  exit();
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function uc_worldpay_theme() {
+  return array(
+    'uc_worldpay_cards' => array(
+      'arguments' => array(),
+    ),
+  );
+}

@@ -1,0 +1,57 @@
+a {
+	color: #4DB849;
+}
+
+h4 {
+	font-family: Verdana;
+	font-size: 12px;
+	font-weight: normal;
+	color: #999999;
+	margin: 0;
+	padding: 0;
+	text-transform: uppercase;
+}
+
+
+h2 {
+	font-family: Verdana;
+	font-size: 18px;
+	font-weight: normal;
+	color: #1C241D;
+	margin-top: 20px;
+	margin-bottom: 8px;
+	padding: 0;
+	padding-top:20px;
+	border-top-width: 1px;
+	border-top-style: dotted;
+	border-top-color: #d5d5d5;
+	
+}
+
+h2 a {
+	font-family: Verdana;
+	font-size: 18px;
+	font-weight: normal;
+	color: #4DB849;
+	text-decoration: none;
+	
+}
+
+p {
+	font-family: Verdana;
+	font-size: 13px;
+	font-weight: normal;
+	color: #333333;
+	margin: 0px;
+	margin-bottom:20px;
+	margin-top:20px;
+	padding: 0;
+}
+
+ul {
+	font-family: Verdana;
+	font-size: 13px;
+	font-weight: normal;
+	color: #333333;
+}
+

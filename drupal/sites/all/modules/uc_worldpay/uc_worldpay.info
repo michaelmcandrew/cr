@@ -1,0 +1,12 @@
+; $Id: uc_worldpay.info,v 1.1.4.1 2008/12/07 18:34:06 rareface Exp $
+name = Worldpay
+description = Integrates Worldpay's redirected payment service with Ubercart.
+dependencies[] = uc_payment
+package = Ubercart - payment
+
+; Information added by drupal.org packaging script on 2008-12-07
+version = "6.x-1.0-beta1"
+core = "6.x"
+project = "uc_worldpay"
+datestamp = "1228675616"
+

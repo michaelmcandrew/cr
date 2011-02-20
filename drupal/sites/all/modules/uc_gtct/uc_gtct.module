@@ -1,0 +1,239 @@
+<?php
+// Module by Michael Hübl. http://www.michaelhuebl.com 
+// Enhanced bij Kees Kodde Qrios Webdiensten. www.qrios.nl
+// Enhanced and Ported to 6.x by Zmove
+
+/*******************************************************************************
+* Drupal Hooks
+******************************************************************************/
+
+/**
+ * Implementation of hook_help().
+ */
+function uc_gtct_help($path, $arg) {
+  switch ($path) {
+    case 'admin/store/settings/store/gtct':
+      return '<p>'. t('This page allow you to define Terms and Conditions for your store. Basically, you need to create a node that contain all your text link it here. This module will add a pane in your checkout page with a checkbox that the user have to check to complete the order. You can additionnaly add a text to display in an iframe above the checkbox.') .'</p>';
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ **/
+function uc_gtct_theme() {
+  return array(
+    'uc_gtct' => array(
+      'arguments' => array('node' => null), 
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */ 
+function uc_gtct_menu() {
+	$items['admin/store/settings/store/gtct'] = array(
+		'title' => 'Terms and conditions',
+		'description' => 'Terms and Conditions settings.',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('uc_gtct_admin', 5),		
+		'access arguments' => array('administer store'),
+		'weight' => 2,
+		'type' => MENU_NORMAL_ITEM,
+	);
+	
+  // Add the language tabs if there are other languages
+  if (module_exists('locale')) {
+    global $language;
+    $languages = locale_language_list();
+    foreach ($languages as $code => $name) {
+      $items["admin/store/settings/store/gtct/$code"] = array(
+        'title' => '@lang',
+        'title arguments' => array('@lang' => $name),
+        'page arguments' => array('uc_gtct_admin', $code),
+        'access arguments' => array('administer store'),
+        'type' => $language->language == $code ? MENU_DEFAULT_LOCAL_TASK : MENU_LOCAL_TASK,
+      );
+    }
+  } else {
+    $items['admin/store/settings/store/gtct/en'] = array(
+      'title' => 'Terms and conditions',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('uc_gtct_admin', 'en'),
+      'access arguments' => array('administer store'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+    );
+  }
+
+	$items['gtct/blank'] = array(
+		'title' => t('Terms and Conditions'),
+		'description' => t('View terms and conditions.'),
+		'page callback' => 'uc_gtct_view_blank',
+		'access arguments' => array('access content'),
+	);		
+
+	return $items;
+}
+
+
+/*******************************************************************************
+* Ubercart Hooks
+******************************************************************************/
+/**
+ * Implementation of hook_checkout_pane().
+ */
+function uc_gtct_checkout_pane() {
+	$panes[] = array(
+		'id' => 'gtct',
+		'callback' => 'uc_checkout_pane_gtct',
+		'title' => t('Terms and conditions'),
+		'desc' => t("Please confirm if you agree with our terms and conditions that aply on all our deliveries."),
+		'weight' => 6,
+		'collapsible' => FALSE,
+	);
+	return $panes;
+}
+
+/**
+ * Display the GTCT Pane
+ */
+function uc_checkout_pane_gtct($op) {
+	switch ($op) {
+		case 'view':
+			global $language;
+			drupal_add_css(drupal_get_path('module', 'uc_gtct').'/uc_gtct.css');
+			$variable = variable_get('uc_gtct_'.$language->language, array('node_url' => null, 'show_popup' => 0, 'terms_conditions' => '', 'input_format' => null));
+			
+			if($variable['node_url']) {
+				if (!empty($variable['show_popup'])) {
+					$link = ' <a onclick="window.open(\'/gtct/blank'.'\', \'gtct_popup\', \'top=100,left=100,width=600,height=500,status=yes,resizable=yes,scrollbars=yes\'); return false;" href="/gtct/blank'.'" target="_BLANK">'.t('terms and conditions').'</a>';
+				}	else {
+					$link = l(t('terms and conditions'), 'node/'.$variable['node_url']);
+				}
+			} else {
+				$link = t('terms and conditions');
+			}
+			
+			//Show GTCT in pane?
+			if (!empty($variable['terms_conditions'])) {
+				$contents['gtct']['text'] = array(
+					'#prefix' => '<div id="gtct_pane">',
+					'#value' => filter_xss($variable['terms_conditions']),
+					'#suffix' => '</div>',
+					'#weight' => 0,
+				);
+			}
+			
+			//Show Checkbox
+			$contents['gtct']['agree'] = array(
+				'#type' => 'checkboxes',
+				'#title' => t('Terms and Conditions'),
+				'#options' => array('gtct' => t('I have read and understood the ').$link.t(' for this order.')),
+				'#weight' => 1,
+				'#required' => true, 
+			);
+						
+			return array('contents' => $contents, 'next-button' => FALSE);
+	}
+}
+
+
+/******************************************************************************
+* ADMIN FUNCTIONS
+******************************************************************************/
+
+function uc_gtct_admin($form_state = NULL, $lang = NULL) {
+  // See which language we're modifying
+  if (empty($lang)) {
+    global $language;
+    $lang = $language->language;
+  }
+
+	$variable = variable_get('uc_gtct_'.$lang, array('node_url' => null, 'show_popup' => 0, 'terms_conditions' => '', 'input_format' => null));
+	
+  $form['lang'] = array(
+    '#type' => 'hidden',
+    '#value' => $lang,
+  );
+
+	$form['node_url'] = array(
+		'#type' => 'textfield', 
+		'#title' => t('URL'),
+		'#description' => t('What is the nid of the node that contain your GTCT.'),
+		'#default_value' => $variable['node_url'],
+	);	
+	
+	$form['show_popup'] = array(
+		'#type' => 'checkbox', 
+		'#title' => t('Show Popuplink'),
+		'#description' => t('Check this if you want the GTCT displayed in a popup.'),
+		'#default_value' => $variable['show_popup'], 
+	);
+		
+	$form['terms_conditions'] = array(
+		'#type' => 'textarea',
+		'#title' => t('Terms and conditions'),
+		'#default_value' => filter_xss($variable['terms_conditions']),
+		'#description' => t('Here you can write some text to display in an iframe on the checkout page. If empty, no iframe will appear.'),
+		'#rows' => 10,
+	);
+
+	$form['input_format'] = filter_form($variable['input_format']);
+	
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Submit'),
+	);
+
+	return $form;
+}
+
+function uc_gtct_admin_validate($form, &$form_state) {
+	if($form_state['values']['node_url'] && !is_numeric($form_state['values']['node_url'])) {
+		form_set_error('node_url', t('Only numbers are allowed.'));
+	}
+}
+
+function uc_gtct_admin_submit($form, &$form_state) {
+	$variable = array();
+	$variable['node_url'] = $form_state['values']['node_url'];	
+	$variable['show_popup'] = $form_state['values']['show_popup'];	
+	$variable['terms_conditions'] = $form_state['values']['terms_conditions'];
+	$variable['input_format'] = $form_state['values']['input_format'];
+
+  // Save into the correct language definition
+  global $language;
+  $lang = $form['lang']['#value'];
+  if (empty($lang)) {
+    $lang = $language->language;
+  }
+	
+	variable_set('uc_gtct_'.$lang, $variable);
+	drupal_set_message('GTCT Saved successfully');
+}
+
+function uc_gtct_view_blank() {
+  global $language;
+  $lang = $language->language;
+	$variable = variable_get('uc_gtct_'.$lang, array('node_url' => null, 'show_popup' => 0, 'terms_conditions' => '', 'input_format' => null));
+	$nid = $variable['node_url'];
+//  print_r($variable);
+  //echo 'ear  '.$nid;
+	print theme('uc_gtct', $nid);
+	/**
+	 * For me, calling that : print theme('uc_gtct', $node);
+	 **/
+}
+
+function theme_uc_gtct($nid) {
+  $node = node_load($nid);
+	$output = '<html><head><title>'.$node->title.'</title>
+  </head><body>';
+	$output .= '<h1>'.$node->title.'</h1>';
+	$output .= $node->body;
+	$output .= '</body></html>';
+	return $output;
+}
+
+
+

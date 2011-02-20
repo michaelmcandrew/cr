@@ -1,0 +1,5 @@
+; $Id$
+name = Carbon Retirement Calculator
+description = Allows carbon calculations based on different energy uses, e.g. flights, driving, etc.  Integrates with (and depends on) Ubercart.
+core = 6.x
+package = Carbon Retirement

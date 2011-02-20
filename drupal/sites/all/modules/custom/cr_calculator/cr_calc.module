@@ -1,0 +1,749 @@
+<?php
+/**
+* @file
+* Calculates Carbon output of different things
+*/
+
+include_once('cr_emmissions_factors.inc');
+
+function cr_calc_add_to_cart_data($form_values) {
+  // Store the customer entered price in the product's data array.
+	switch ($form_values['nid']) {
+	  case 2:
+			cr_calc_flight_form_submit($form_values);
+			break;
+	  case 3:
+			cr_calc_driving_form_submit($form_values);		
+			break;
+	  case 4:
+			cr_calc_amount_form_submit($form_values);		
+			break;
+	  case 5:
+			cr_calc_value_form_submit($form_values);		
+			break;
+	  case 6:
+			cr_calc_gas_form_submit($form_values);		
+			break;
+	  case 7:
+			cr_calc_elec_form_submit($form_values);		
+			break;
+	};
+	return array('price' => $form_values['price'], 'uniqid' => uniqid(), 'description'=>$form_values['description']);
+}
+
+function cr_calc_cart_item($op, &$item) {
+  // When the cart product is being loaded...
+  if ($op == 'load') {
+    // If the product has a variable price set...
+    if (!empty($item->data['price'])) {
+      // Update the cart item's price to the entered price value.
+      $item->price = $item->data['price'];
+      $item->title = $item->data['description'];
+    }
+  }
+}
+
+function cr_calc_nodeapi(&$node, $op, $teaser, $page) {
+	if($op=='view' AND $node->type=='product') {
+//		dpm($node->content);
+		unset($node->content['display_price']);
+		unset($node->content['sell_price']);
+		//();
+	}
+	if($op=='load' AND $node->nid==9) {
+		unset($node->title);
+		//();
+	}
+	if($node->type=='simplenews') {
+		drupal_add_css(drupal_get_path('module', 'cr_calc') . '/carbon-newsletter.css');
+	}
+}
+
+function cr_calc_form_alter(&$form, &$form_state, $form_id) {
+	
+	// If this is a calculator form
+	if(substr($form_id, 0, 28)=='uc_product_add_to_cart_form_') {
+		$form['submit']['#weight']=1;
+		$form['#validate'][]='cr_calc_form_validate_is_amount';
+		//switch to make specific form changes
+		switch (substr($form_id, 28, 1)) {
+		  case 2:
+				$form=array_merge($form, cr_calc_flight_form());
+				$form['#validate'][]='cr_calc_flight_form_validate';
+				break;
+		  case 3:
+				$form=array_merge($form, cr_calc_driving_form());
+				$form['#validate'][]='cr_calc_driving_form_validate';
+				break;
+		  case 4:
+				$form=array_merge($form, cr_calc_amount_form());
+				$form['#validate'][]='cr_calc_amount_form_validate';
+				break;
+		  case 5:
+				$form=array_merge($form, cr_calc_value_form());
+				$form['#validate'][]='cr_calc_value_form_validate';
+				break;
+		  case 6:
+				$form=array_merge($form, cr_calc_gas_form());
+				$form['#validate'][]='cr_calc_gas_form_validate';
+				break;
+		  case 7:
+				$form=array_merge($form, cr_calc_elec_form());
+				$form['#validate'][]='cr_calc_elec_form_validate';
+				break;
+		}
+	}
+	// Change some fields in the cart view form.
+  if ($form_id == 'uc_cart_view_form') {
+		$form['items']['#columns']['desc']['cell']='Description';
+		unset($form['items']['#columns']['qty']); // hide the quantity column
+		unset($form['items']['#columns']['image']); // hide the quantity column
+    for ($i = 0, $j = count(uc_cart_get_contents()); $i < $j; $i++) {
+		$form['items'][$i]['qty']['#type']='hidden'; // hide the quantity values
+		$form['items'][$i]['image']['#type']='hidden'; // hide the quantity values
+		$form['items'][$i]['desc']['#value']=strip_tags($form['items'][$i]['desc']['#value']); //remove link from email
+    }
+  }
+}
+
+function cr_calc_menu() {
+	$items['cr/airports/autocomplete'] = array (
+		'title' => t('Airport autocomplete'),
+		'page callback' => 'cr_calc_airport_autocomplete',
+		'access callback' => TRUE,
+		'menu_name' => 'non-existent'
+		);
+		
+  $items['simple/js'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'simple_ahah_render',
+    'access callback' => TRUE,
+  	);
+  $items['simple/js'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'simple_ahah_render',
+    'access callback' => TRUE,
+  	);
+	return $items;
+}
+
+function cr_calc_amount_form() {
+
+	$form['type']=array(
+		'#type'=>'hidden',
+		'#value'=>'amount'
+		);
+		
+	$form['amount'] = array(
+		'#title'=>'Amount of CO2 (in tonnes)',
+		'#type'=>'textfield',
+		'#size'=>'25',
+		'#required'=>TRUE,
+		);
+	return $form;
+}
+
+function cr_calc_amount_form_validate(&$form, $form_state) {
+ 	if(!cr_calc_is_positive($form['amount']['#value'])) {
+		form_set_error('amount', 'Please enter a number, e.g. 2.5');
+		return;
+	}
+	cr_calc_check_valid_amount($form['amount']['#value']);
+}
+
+function cr_calc_amount_form_submit(&$form) {
+	dpm($form['amount']=str_replace(',','',$form['amount']));
+	cr_calc_round_amount_and_calculate_price($form);
+	$form['description']=t('@amount tonnes of CO2', array('@amount'=>$form['amount']));	
+}
+
+function cr_calc_amount_calculate(&$form) {
+}
+
+function cr_calc_value_form() {
+
+	$form['type']=array(
+		'#type'=>'hidden',
+		'#value'=>'value'
+		);
+
+	$form['value']=array(
+		'#title'=>'Value in £s',
+		'#type'=>'textfield',
+		'#size'=>'25',		
+		'#required'=>TRUE,
+		);
+	return $form;
+}
+
+function cr_calc_value_form_validate(&$form, $form_state) {
+	if(!cr_calc_is_positive($form['value']['#value'])) {
+		form_set_error('value', 'Please enter a value without the £ sign, e.g. 2.50');
+		return;
+	}
+	cr_calc_value_calculate($form['#post']);
+	cr_calc_check_valid_amount($form['#post']['amount']);
+}
+
+function cr_calc_value_form_submit(&$form) {
+	$form['value']=str_replace(',','',$form['value']);
+	cr_calc_value_calculate($form);
+	cr_calc_round_amount_and_calculate_price($form);
+	$form['price']=$form['value']; // we reset this because otherwise people specify an exact amount to retire.
+	$form['description']=t('£@value of CO2; @amount tonnes of CO2', array('@amount'=>$form['amount'], '@value'=>number_format($form['value'],2)));
+}
+
+function cr_calc_value_calculate(&$form) {	
+	//calculate the amount of carbon based on the cost price.
+	$form['amount'] = $form['value'] / cr_calc_eua_latest();
+	
+}
+
+function cr_calc_elec_form() {
+
+	$form['type']=array(
+		'#type'=>'hidden',
+		'#value'=>'elec'
+		);
+		
+	$form['elec']=array(
+		'#title'=>'Electricity (kWh)',
+		'#type'=>'textfield',
+		'#size'=>'25',
+		'#required'=>TRUE,
+		);
+	return $form;
+}
+
+function cr_calc_elec_form_validate(&$form, $form_state) {
+	if(!cr_calc_is_positive($form['elec']['#value'])) {
+		form_set_error('elec', 'Please enter a number, e.g. 2.5');
+		return;
+	}
+	cr_calc_elec_calculate($form['#post']);
+	cr_calc_check_valid_amount($form['#post']['amount']);
+}
+
+function cr_calc_elec_form_submit(&$form) {
+	$form['elec']=str_replace(',','',$form['elec']);
+	cr_calc_elec_calculate($form);
+	cr_calc_round_amount_and_calculate_price($form);
+	$form['description'] = t('@kwh kWh of electricity; @amount tonnes of CO2', array('@kwh'=>$form['elec'],'@amount'=>$form['amount'],));
+	//dpm($form);
+	
+
+}
+
+function cr_calc_elec_calculate(&$form) {
+	$form['elec']=str_replace(',','',$form['elec']);
+	$form['amount'] = $form['elec'] * CREF_ELEC;
+}
+
+function cr_calc_gas_form() {
+
+	$form['type']=array(
+		'#type'=>'hidden',
+		'#value'=>'gas'
+		);
+		
+	$form['gas']=array(
+		'#title'=>'Gas (kWh)',
+		'#type'=>'textfield',
+		'#size'=>'25',
+		'#required'=>TRUE,
+		);
+	return $form;
+}
+
+function cr_calc_gas_form_validate(&$form, $form_state) {
+	if(!cr_calc_is_positive($form['gas']['#value'])) {
+		form_set_error('gas', 'Please enter a number, e.g. 2500');
+		return;
+	}
+	cr_calc_gas_calculate($form['#post']);
+	cr_calc_check_valid_amount($form['#post']['amount']);	
+}
+
+function cr_calc_gas_form_submit(&$form) {
+	$form['gas']=str_replace(',','',$form['gas']);
+	cr_calc_gas_calculate($form);
+	cr_calc_round_amount_and_calculate_price($form);
+	$form['description'] = t('@kwh kWh of gas; @amount tonnes of CO2', array('@kwh'=>$form['gas'],'@amount'=>$form['amount']));
+}
+
+function cr_calc_gas_calculate(&$form) {
+	$form['gas']=str_replace(',','',$form['gas']);
+	$form['amount'] = $form['gas'] * CREF_GAS;
+}
+
+function cr_calc_driving_form() {
+	drupal_add_js(drupal_get_path('module', 'cr_calc') . '/driving_form.js');
+
+	
+	
+	$form['type']=array(
+		'#type'=>'hidden',
+		'#value'=>'driving'
+		);
+
+	$form['fuel']=array(
+		'#title'=>t('What kind of car do you drive?'),
+		'#type'=>'select',
+		'#options'=>array(
+			''=>' - select - ',
+			'petrol'=>'Petrol',
+			'diesel'=>'Diesel',
+			'hybrid'=>'Hybrid'
+			),
+		);
+	$form['petrol_size']=array(
+		'#title'=>t('Select an engine size'),
+		'#type'=>'select',
+		'#options'=>array(
+			''=>' - select - ',
+			'PS'=>'small petrol (less than 1.4 litres)',
+			'PM'=>'medium petrol (1.4 to 2.0 litres)',
+			'PL'=>'large petrol (more than 2.0 litres)',
+			'PU'=>'unknown petrol'
+			),
+		);
+	$form['diesel_size']=array(
+		'#title'=>t('Select an engine size'),
+		'#type'=>'select',
+		'#options'=>array(
+			''=>' - select - ',
+			'DS'=>'small diesel (less than 1.7 litres)',
+			'DM'=>'medium diesel (1.7 to 2.0 litres)',
+			'DL'=>'large diesel (more than 2.0 litres)',
+			'DU'=>'unknown diesel'
+			),
+		);
+	$form['distance']=array(
+		'#title'=>t('Enter the distance in miles or kilometres'),
+		'#type'=>'textfield',
+		'#size'=>'25',
+		
+		);
+	$form['unit_of_measurement']=array(
+		'#title'=>t('Select a unit of measurement'),
+	'#type'=>'select',
+	'#options'=>array(
+		'miles'=>'Miles',
+		'kilometres'=>'Kilometres',
+		)
+	);
+	return $form;
+}
+
+function cr_calc_driving_form_validate(&$form, $form_state) {
+	$form['distance']['#value']=str_replace(',','',$form['distance']['#value']);
+	switch ($form['fuel']['#value']) {
+	  case '':
+			form_set_error('fuel', 'Please choose a fuel type');
+			$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+			break;
+		case 'petrol':
+			if($form['petrol_size']['#value']==''){
+				form_set_error('petrol_size', 'Please choose an engine size');
+				$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+				
+			}
+			break;
+		case 'diesel':
+			if($form['diesel_size']['#value']==''){
+				form_set_error('diesel_size', 'Please choose an engine size');
+				$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+				
+			}
+			break;
+	}
+	if( !is_numeric( $form['distance']['#value'] ) ) {
+		form_set_error('distance', 'Please enter the distance you wish to offset, e.g. 10000');
+		$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+	}
+	if($inputError!=TRUE){
+		cr_calc_driving_calculate($form['#post']);
+		cr_calc_check_valid_amount($form['#post']['amount']);
+	}
+}
+
+function cr_calc_driving_form_submit(&$form) {	
+	$form['distance']=str_replace(',','',$form['distance']);
+	
+	cr_calc_driving_calculate($form);
+	cr_calc_round_amount_and_calculate_price($form);
+
+	$engine=cr_calc_driving_find_engine_size($form);	
+	$formDef=cr_calc_driving_form();
+	$engine_size_descriptions = array_merge(
+		$formDef['petrol_size']['#options'],
+		$formDef['diesel_size']['#options'],
+		array('HA' => 'hybrid')
+	);
+
+
+	$form['description'] = t(
+		'@distance @unit_of_measurement in a @engine car; @amount tonnes of CO2.',
+		array(
+			'@distance'=>$form['distance'],
+			'@unit_of_measurement'=>$form['unit_of_measurement'],
+			'@engine'=>$engine_size_descriptions[$engine],
+			'@amount'=>$form['amount']
+		)
+	);
+	
+}
+
+function cr_calc_driving_find_engine_size($form) {
+	switch ($form['fuel']) {
+	  case 'petrol':
+			return $form['petrol_size'];
+			break;
+	  case 'diesel':
+	  	return $form['diesel_size'];
+	    break;
+		case 'hybrid':
+			return 'HA';
+	    break;
+	}
+}
+
+function cr_calc_driving_calculate(&$form) {	
+	// Find engine type
+	$form['distance']=str_replace(',','',$form['distance']);
+	$engine=cr_calc_driving_find_engine_size($form);
+	// Find distance
+	switch ($form['unit_of_measurement']) {
+	    case 'miles':
+	      $distance = $form['distance'] * 1.609344;
+	      break;
+	    case 'kilometres':
+	    	$distance = $form['distance'];
+	      break;
+	}
+	
+	if(isset($engine)){
+		$form['amount'] = $distance * constant( 'CREF_CAR_'.$engine);
+	}
+	
+}
+
+function cr_calc_flight_form() {
+
+	$form['type']=array(
+		'#type'=>'hidden',
+		'#value'=>'flight'
+	);
+
+	$form['flight_origin']=array(
+		'#title'=>'Origin',
+		'#type'=>'textfield',
+		'#size'=>'50',
+		'#autocomplete_path' => 'cr/airports/autocomplete',  
+		'#required'=>TRUE,
+	);
+	$form['flight_destination']=array(
+		'#title'=>'Destination',
+		'#type'=>'textfield',
+		'#size'=>'50',
+		'#autocomplete_path' => 'cr/airports/autocomplete',  
+		'#required'=>TRUE,
+	);
+	$form['passengers']=array(
+		'#title'=>'Number of passengers',
+		'#size'=>'25',
+		'#type'=>'textfield',
+		'#required'=>TRUE,
+	);
+	$form['ticket_type']=array(
+		'#title'=>'Ticket type',
+	'#type'=>'select',
+	'#options'=>array(
+		''=>' - select - ',
+		'oneway'=>'One way',
+		'return'=>'Return',
+		),
+	'#required'=>TRUE
+	);
+	return $form;
+}
+
+function cr_calc_flight_form_validate(&$form, $form_state) {
+	
+	if(!is_object($origin=cr_calc_get_airport($form['flight_origin']['#value']))) {
+		form_set_error('flight_origin', 'Origin not found: Type the name of the airport or city that you are flying from, wait a moment for a drop-down menu to appear, and select the correct airport from the menu');
+		$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+		
+	}
+	if(!is_object($destination=cr_calc_get_airport($form['flight_destination']['#value']))) {
+		form_set_error('flight_destination', 'Destination not found: Type the name of the airport or city that you are flying to, wait a moment for a drop-down menu to appear, and select the correct airport from the menu');
+		$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+	}
+	if(!cr_calc_is_positive_integer($form['passengers']['#value'])) {
+		form_set_error('passengers', 'Please enter the number of passengers, e.g. 3');
+		$inputError=TRUE; // to distinguish between this type of error and a less than the min error (which we only want to show if there are no input errors)
+	}
+	if($inputError!=TRUE){
+		cr_calc_flight_calculate($form['#post']);
+		cr_calc_check_valid_amount($form['#post']['amount']);
+	}
+}
+	
+function cr_calc_flight_form_submit(&$form) {
+
+	cr_calc_flight_calculate($form);
+	cr_calc_round_amount_and_calculate_price($form);
+	
+	$formDef=cr_calc_flight_form();
+	$origin = cr_calc_get_airport($form['flight_origin']);
+	$destination = cr_calc_get_airport($form['flight_destination']);
+	
+	
+	$form['description'] = t(
+		'@ticket_type flight for @passengers @people from @flight_origin to @flight_destination; @amount tonnes of CO2.',
+		array(
+			'@ticket_type'=>$formDef['ticket_type']['#options'][$form['ticket_type']],
+			'@passengers'=>$form['passengers'],
+			'@people'=>( $form['passengers'] == 1 )? 'person':'people',
+			'@flight_origin'=>$origin->name,
+			'@flight_destination'=>$destination->name,
+			'@amount'=>$form['amount'],
+		)
+	);
+}
+
+function cr_calc_flight_calculate(&$form) {
+
+	$origin = cr_calc_get_airport($form['flight_origin']);
+	$destination = cr_calc_get_airport($form['flight_destination']);
+		
+	$olat = (90 - $origin->latitude) * ( pi() / 180 );
+	$olon = ($origin->longitude) * ( pi() / 180 );
+	
+	$dlat = (90 - $destination->latitude) * ( pi() / 180 );
+	$dlon = ($destination->longitude) * ( pi() / 180 );
+		
+	$distance =
+		6378 * 1.09 * ACOS (
+			SIN($olat) * COS($olon) * SIN($dlat) * COS($dlon) +
+			SIN($olat) * SIN($olon) * SIN($dlat) * SIN($dlon) +
+			COS($olat) * COS($dlat) 
+		);
+
+	if( $distance < CREF_FLIGHT_DOM_LIMIT ) {
+		$ef = CREF_FLIGHT_DOM;
+	} elseif( $distance < CREF_FLIGHT_MED_LIMIT ) {
+		$ef = CREF_FLIGHT_MED;	 
+	} else {
+		$ef = CREF_FLIGHT_LONG;
+	}
+
+	$form['amount'] = $distance * $ef * $form['passengers'];
+
+	if( $form['ticket_type'] == 'return' ) {
+		$form['amount'] = $form['amount'] * 2;
+	}
+}
+
+function cr_calc_get_airport($iata_code) {
+	$result = db_query("SELECT * FROM {cr_airports} WHERE search_text = '%s'", $iata_code);
+	return db_fetch_object($result);
+}
+
+function cr_calc_airport_autocomplete($string = '') {
+  $matches = array();
+  if ($string) {
+    $result = db_query_range("SELECT * FROM {cr_airports} WHERE LOWER(search_text) LIKE LOWER('%%%s%%') ORDER BY search_text", $string, 0, 10);
+    while ($airport = db_fetch_object($result)) {
+      $matches[$airport->search_text] = $airport->search_text;
+    }
+  }
+  drupal_json($matches);
+}
+
+function cr_calc_round_amount_and_calculate_price(&$form) {
+	$form['amount'] = round( $form['amount'], 2 );
+	if($form['amount']<0.01){
+		$form['to_small']=TRUE;
+	}
+	$form['price'] = round( $form['amount'] * cr_calc_eua_latest(), 2 );
+	
+}
+
+function cr_calc_check_valid_amount($value) {
+	$value=str_replace(',','',$value);
+	if($value < 0.01) {
+		form_set_error('', 'You must offset at least 0.01 tonnes of CO2 per offset.  This offset was only '.number_format($value, 4).' tonnes');
+	}
+}
+
+function cr_calc_is_positive_integer($value) {
+	return $value > 0 AND round($value) == $value;
+}
+
+function cr_calc_is_positive($value) {
+	return $value > 0;
+}
+
+function cr_calc_block($op = 'list', $delta = 0, $edit = array()) {
+	switch ($op) {
+		case 'list':
+			$blocks[0]['info']=t('Latest EUA price');
+			return $blocks;
+		case 'view':
+			$block['subject']=t('Latest EUA price');
+			$block['content']='Today\'s price per tonne: <b>£'.number_format(cr_calc_eua_latest(),2).'</b> including VAT.';
+			return $block;			
+	}
+}
+
+function cr_calc_eua_latest($detail='price'){
+	$latestEuaNodeID = db_result(db_query('SELECT nid FROM {node} WHERE type="eua" AND status=1 ORDER BY created DESC LIMIT 1'));
+	$latestEua=node_load($latestEuaNodeID);
+	if($detail=='price') {
+		return number_format($latestEua->field_total_price_per_tonne[0]['value'], 2);
+	} else {
+		return $latestEua;
+	}
+	
+}
+
+function carbon_uc_cart_block_items($items) {
+  // If there are items in the shopping cart...
+  if ($items) {
+    $output = '<table class="cart-block-items"><tbody>';
+    $row_class = 'odd';
+
+    $context = array(
+      'location' => 'cart-block-item',
+    );
+
+    // Loop through each item.
+    foreach ($items as $item) {
+      $context['subject'] = array(
+        'cart_item' => $item,
+        'field' => 'price',
+      );
+      // Add the basic row with quantity, title, and price.
+      $output .= '<tr class="'. $row_class .'">'
+                .'<td class="cart-block-item-title">'. strip_tags($item['title']) .'</td>'
+                .'<td class="cart-block-item-price">'. uc_price($item['price'], $context) .'</td></tr>';
+
+      // Add a row of description if necessary.
+      if ($item['desc']) {
+        $output .= '<tr class="'. $row_class .'"><td colspan="3" class="cart-block-item-desc">'. $item['desc'] .'</td></tr>';
+      }
+
+      // Alternate the class for the rows.
+      $row_class = ($row_class == 'odd') ? 'even' : 'odd';
+    }
+
+    $output .= '</tbody></table>';
+  }
+  else {
+    // Otherwise display an empty message.
+    $output = '<p>'. t('There are no products in your shopping cart.') .'</p>';
+  }
+
+  return $output;
+}
+
+function carbon_cart_review_table($show_subtotal = TRUE) {
+  $subtotal = 0;
+
+  // Set up table header.
+  $header = array(
+//    array('data' => t('Qty'), 'class' => 'qty'),
+    array('data' => t('Products'), 'class' => 'products'),
+    array('data' => t('Price'), 'class' => 'price'),
+  );
+
+  $context = array(
+    'location' => 'cart-checkout-item',
+  );
+
+  // Set up table rows.
+  foreach (uc_cart_get_contents() as $item) {
+    $price_info = array(
+      'price' => $item->price,
+      'qty' => $item->qty,
+    );
+    $context['subject'] = array(
+      'cart_item' => $item,
+      'node' => node_load($item->nid),
+    );
+    $context['revision'] = 'altered';
+
+    $total = uc_price($price_info, $context);
+    $subtotal += $total;
+
+    $description = check_plain($item->title);
+    foreach (module_implements('cart_item_description') as $module) {
+      $description .= module_invoke($module, 'cart_item_description', $item);
+    }
+
+    // Remove node from context to prevent the price from being altered.
+    unset($context['subject']);
+    $context['revision'] = 'themed-original';
+    $rows[] = array(
+//      array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => 'qty'),
+      array('data' => $description, 'class' => 'products'),
+      array('data' => uc_price($total, $context), 'class' => 'price'),
+    );
+  }
+
+  // Add the subtotal as the final row.
+  if ($show_subtotal) {
+    $context = array(
+      'revision' => 'themed-original',
+      'location' => 'cart-checkout-subtotal',
+    );
+    $rows[] = array(
+      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 4, 'class' => 'subtotal')),
+      'class' => 'subtotal',
+    );
+  }
+
+  return theme('table', $header, $rows, array('class' => 'cart-review'));
+}
+
+function carbon_cart_checkout_review() {
+  drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
+  $form = drupal_get_form('uc_cart_checkout_review_form');
+
+  if ($_SESSION['do_review'] !== TRUE && !uc_referer_check('cart/checkout')) {
+    drupal_goto('cart/checkout');
+  }
+  unset($_SESSION['do_review']);
+
+  $order = uc_order_load($_SESSION['cart_order']);
+
+  if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'in_checkout') {
+    unset($_SESSION['cart_order']);
+    drupal_goto('cart/checkout');
+  }
+
+  $panes = _checkout_pane_list();
+
+  // If the cart isn't shippable, bypass panes with shippable == TRUE.
+  if (!uc_cart_is_shippable() && variable_get('uc_cart_delivery_not_shippable', TRUE)) {
+    $panes = uc_cart_filter_checkout_panes($panes, array('shippable' => TRUE));
+  }
+
+  foreach ($panes as $pane) {
+    if (variable_get('uc_pane_'. $pane['id'] .'_enabled', TRUE)) {
+      $func = $pane['callback'];
+      if (function_exists($func)) {
+        $return = $func('review', $order, NULL);
+        if (!is_null($return)) {
+          $data[$pane['title']] = $return;
+        }
+      }
+    }
+  }
+
+  $output = theme('uc_cart_checkout_review', $data, $form);
+
+  return $output;
+}
+

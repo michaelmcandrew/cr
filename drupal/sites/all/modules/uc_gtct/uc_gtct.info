@@ -1,0 +1,7 @@
+; $Id$
+name = General terms and conditions of trade
+description = Defines a pane at checkout page for accepting the gtct
+dependencies[] = uc_store
+package = "Ubercart - core (optional)"
+version = "6.x-1.7-beta"
+core = 6.x

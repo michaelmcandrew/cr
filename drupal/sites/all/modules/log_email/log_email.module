@@ -1,0 +1,14 @@
+<?php
+
+
+function log_email_mail_alter(&$message) {
+	if (!empty($message) && is_array($message)) {
+		$logMessage= 'Email to "'.$message['to'];
+		$logMessage.= '". From "'.$message['from'];
+		$logMessage.= '". Subject "'.$message['subject'];
+		if(is_array($message['body'])){
+		  $logMessage.= '". Body "'.substr(str_replace(array("\n", "\r"), "",implode($message['body'])), 0, 250).'..."';
+		}
+		watchdog('sentmail', $logMessage, array(), WATCHDOG_INFO);
+	}
+}

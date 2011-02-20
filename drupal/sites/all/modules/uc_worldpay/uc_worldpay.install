@@ -1,0 +1,6 @@
+<?php
+// $Id: uc_worldpay.install,v 1.1 2008/10/21 16:54:32 psynaptic Exp $
+
+function uc_worldpay_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_worldpay%'");
+}

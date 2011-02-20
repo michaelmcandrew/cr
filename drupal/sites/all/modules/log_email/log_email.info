@@ -1,0 +1,6 @@
+; $Id: reroute_email.info,v 1.2 2008/07/24 14:32:35 kbahey Exp $
+name = Log emails sent from Drupal
+description = Logs emails sent to Drupal's dblog.
+package = Development
+core = "6.x"
+
