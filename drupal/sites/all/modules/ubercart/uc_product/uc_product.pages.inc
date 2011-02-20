@@ -1,11 +1,10 @@
 <?php
-// $Id: uc_product.pages.inc,v 1.1.2.4 2009/04/22 17:45:09 islandusurper Exp $
+// $Id: uc_product.pages.inc,v 1.1.2.8 2010/07/12 01:29:45 tr Exp $
 
 /**
  * @file
  * Defines page callbacks for the product module.
  */
-
 
 /**
  * Return an autocomplete list for product nodes.
@@ -23,8 +22,5 @@ function uc_product_title_sku_autocomplete($string = '') {
     }
   }
 
-  print drupal_to_js($matches);
-  exit();
+  drupal_json($matches);
 }
-
-

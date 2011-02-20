@@ -1,19 +1,19 @@
 <?php
-// $Id: uc_cart_links.admin.inc,v 1.1.2.3 2009/04/18 07:29:18 islandusurper Exp $
+// $Id: uc_cart_links.admin.inc,v 1.1.2.5 2010/08/11 17:52:20 islandusurper Exp $
 
 /**
  * @file
  * Cart links administration menu items.
- *
  */
 
 /**
  * Define a form to configure the cart links settings.
  *
- * @return
- *   The form.
+ * @ingroup forms
  */
 function uc_cart_links_settings_form() {
+  $form = array();
+
   $form['instructions'] = array(
     '#value' => '<div>'. t('<a href="!url">View the help page</a> to learn how to create cart links.', array('!url' => url('admin/store/help/cart_links'))) .'</div>',
   );
@@ -33,11 +33,6 @@ function uc_cart_links_settings_form() {
     '#title' => t('Cart links messages'),
     '#description' => t('Enter in messages available to the cart links API for display through a link. Separate messages with a line break.<br />Messages should have a numeric key and text value. Example: 1337|Message text.'),
     '#default_value' => variable_get('uc_cart_links_messages', ''),
-  );
-  $form['uc_cart_links_empty'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Allow cart links to empty customer carts.'),
-    '#default_value' => variable_get('uc_cart_links_empty', TRUE),
   );
   $form['uc_cart_links_restrictions'] = array(
     '#type' => 'textarea',

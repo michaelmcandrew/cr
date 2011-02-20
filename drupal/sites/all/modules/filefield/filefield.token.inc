@@ -1,5 +1,5 @@
 <?php
-// $Id: filefield.token.inc,v 1.4 2009/03/28 06:15:41 quicksketch Exp $
+// $Id: filefield.token.inc,v 1.7 2010/12/06 03:46:09 quicksketch Exp $
 
 /**
  * @file
@@ -34,12 +34,13 @@ function filefield_token_list($type = 'all') {
  * Provide the token values for a given file item.
  */
 function filefield_token_values($type, $object = NULL) {
-  if ($type == 'field') {
+  $tokens = array();
+  if ($type == 'field' && isset($object[0]['fid'])) {
     $item = $object[0];
     $tokens['filefield-fid']                = $item['fid'];
-    $tokens['filefield-description']        = isset($item['data']['description']) ? $item['data']['description'] : '';
-    $tokens['filefield-filename']           = $item['filename'];
-    $tokens['filefield-filepath']           = $item['filepath'];
+    $tokens['filefield-description']        = isset($item['data']['description']) ? check_plain($item['data']['description']) : '';
+    $tokens['filefield-filename']           = check_plain($item['filename']);
+    $tokens['filefield-filepath']           = check_plain($item['filepath']);
     $tokens['filefield-filemime']           = $item['filemime'];
     $tokens['filefield-filesize']           = $item['filesize'];
     $tokens['filefield-filesize_formatted'] = format_size($item['filesize']);
@@ -57,9 +58,9 @@ function filefield_token_values($type, $object = NULL) {
     }
     if (!isset($tokens['filefield-extension'])) {
       $info = pathinfo($item['filename']);
-      $tokens['filefield-onlyname'] = $info['filename'];
+      $tokens['filefield-onlyname'] = basename($info['basename'], '.'. $info['extension']);
       $tokens['filefield-extension'] = $info['extension'];
     }
-    return $tokens;  
   }
+  return $tokens;  
 }

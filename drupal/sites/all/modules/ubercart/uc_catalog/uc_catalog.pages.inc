@@ -1,10 +1,9 @@
 <?php
-// $Id: uc_catalog.pages.inc,v 1.1.2.10 2009/04/02 21:01:47 islandusurper Exp $
+// $Id: uc_catalog.pages.inc,v 1.1.2.14 2010/07/12 01:32:29 tr Exp $
 
 /**
  * @file
  * Catalog menu items.
- *
  */
 
 /**
@@ -18,6 +17,7 @@
  *   Catalog term id from URL.
  * @return
  *   Formatted HTML of the catalog page.
+ * @ingroup themeable
  */
 function theme_uc_catalog_browse($tid = 0) {
   drupal_add_css(drupal_get_path('module', 'uc_catalog') .'/uc_catalog.css');
@@ -71,13 +71,18 @@ function theme_uc_catalog_browse($tid = 0) {
     if ($child->nodes) {
       $cell_link = $image .'<strong>'. l($child->name, uc_catalog_path($child)) .'</strong>';
       if (variable_get('uc_catalog_show_subcategories', TRUE)) {
-        $cell_link .= "<br/><span>". implode(', ', $grandchildren) ."</span>\n";
+        $cell_link .= "<br /><span>". implode(', ', $grandchildren) ."</span>\n";
       }
       $child_list[] = $cell_link;
     }
   }
   if (!empty($catalog->image)) {
-    $output .= theme('imagecache', 'uc_thumbnail', $catalog->image['filepath'], $catalog->name, $catalog->name, array('class' => 'category'));
+    if (module_exists('imagecache')) {
+      $output .= theme('imagecache', 'uc_thumbnail', $catalog->image['filepath'], $catalog->name, $catalog->name, array('class' => 'category'));
+    }
+    else {
+      $output .= theme('image', $catalog->image['filepath'], $catalog->name, $catalog->name, array('class' => 'category'));
+    }
   }
 
   // Build an ORDER BY clause for the SELECT query based on table sort info.
@@ -148,4 +153,3 @@ function theme_uc_catalog_browse($tid = 0) {
 
   return $output;
 }
-

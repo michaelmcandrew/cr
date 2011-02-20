@@ -1,14 +1,15 @@
 <?php
-// $Id: uc_catalog.admin.inc,v 1.1.2.7 2009/01/19 20:31:25 islandusurper Exp $
+// $Id: uc_catalog.admin.inc,v 1.1.2.9 2010/07/12 01:32:29 tr Exp $
 
 /**
  * @file
  * Catalog administration menu items.
- *
  */
 
 
-// Displays an overview of the catalog settings.
+/**
+ * Display an overview of the catalog settings.
+ */
 function uc_catalog_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return theme('summary_overview', summarize_child_form_pages('admin/store/settings/catalog/edit'));
@@ -146,7 +147,11 @@ function uc_catalog_settings_form() {
   return system_settings_form($form);
 }
 
-// Settings forms for using a product grid instead of a table in the catalog.
+/**
+ * Settings forms for using a product grid instead of a table in the catalog.
+ *
+ * @ingroup forms
+ */
 function uc_catalog_grid_settings_form() {
   $form = array();
 
@@ -238,4 +243,3 @@ function uc_catalog_orphaned_products() {
 
   return $output;
 }
-

@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_payment.admin.inc,v 1.1.2.9 2009/04/28 21:03:17 islandusurper Exp $
+// $Id: uc_payment.admin.inc,v 1.1.2.12 2010/07/12 01:57:44 tr Exp $
 
 /**
  * @file
@@ -299,10 +299,9 @@ function uc_payment_by_order_form($form_state, $order) {
 
   $context = array(
     'revision' => 'themed-original',
-    'location' => 'order-payments-admin',
+    'type' => 'order_total',
     'subject' => array(
       'order' => $order,
-      'total' => $total,
     ),
   );
   $form['order_total'] = array('#value' => uc_price($total, $context));
@@ -310,6 +309,7 @@ function uc_payment_by_order_form($form_state, $order) {
 
   if ($payments !== FALSE) {
     foreach ($payments as $payment) {
+      $context['type'] = 'payment';
       $context['subject']['payment'] = $payment;
       $form['payments'][$payment->receipt_id]['#attributes'] = array('valign' => 'top');
       $form['payments'][$payment->receipt_id]['received'] = array(
@@ -326,6 +326,7 @@ function uc_payment_by_order_form($form_state, $order) {
       );
       $total -= $payment->amount;
       unset($context['subject']['payment']);
+      $context['type'] = 'amount';
       $context['subject']['total'] = $total;
       $form['payments'][$payment->receipt_id]['balance'] = array(
         '#value' => uc_price($total, $context, array('cache' => FALSE)),
@@ -426,7 +427,7 @@ function uc_payment_delete_confirm_form($form_state, $order, $payment) {
 
   $context = array(
     'revision' => 'formatted',
-    'location' => 'payment-delete',
+    'type' => 'payment',
     'subject' => array(
       'payment' => $payment,
     ),
@@ -454,4 +455,3 @@ function uc_payment_delete_confirm_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'] .'/payments';
 }
-

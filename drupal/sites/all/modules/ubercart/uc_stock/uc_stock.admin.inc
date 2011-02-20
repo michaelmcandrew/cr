@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_stock.admin.inc,v 1.1.2.4 2009/02/13 22:01:15 islandusurper Exp $
+// $Id: uc_stock.admin.inc,v 1.1.2.8 2010/07/12 01:28:19 tr Exp $
 
 /**
  * @file
@@ -7,7 +7,11 @@
  *
  */
 
-// Form builder for stock settings form.
+/**
+ * Form builder for stock settings form.
+ *
+ * @ingroup forms
+ */
 function uc_stock_settings_form() {
   $form['uc_stock_threshold_notification'] = array(
     '#type' => 'checkbox',
@@ -40,7 +44,9 @@ function uc_stock_settings_form() {
   return system_settings_form($form);
 }
 
-// Displays a stock report for products with stock tracking enabled.
+/**
+ * Display a stock report for products with stock tracking enabled.
+ */
 function uc_stock_report() {
   drupal_add_css(drupal_get_path('module', 'uc_stock') .'/uc_stock.css');
 
@@ -67,7 +73,7 @@ function uc_stock_report() {
   while ($stock = db_fetch_object($result)) {
     $op = array();
     if (user_access('administer products')) {
-      $op[] = l(t('edit'), 'node/'. $stock->nid .'/edit/uc-stock', $options = array('query' => 'destination=admin/store/reports/stock'));
+      $op[] = l(t('edit'), 'node/'. $stock->nid .'/edit/stock', $options = array('query' => 'destination=admin/store/reports/stock'));
     }
 
     // Add the data to a table row for display.
@@ -95,7 +101,12 @@ function uc_stock_report() {
   return $output;
 }
 
-// Form builder for stock report threshold filter.
+/**
+ * Form builder for stock report threshold filter.
+ *
+ * @ingroup forms
+ * @see uc_stock_report_form_submit()
+ */
 function uc_stock_report_form() {
   $form['threshold'] = array(
     '#type' => 'checkbox',
@@ -113,6 +124,9 @@ function uc_stock_report_form() {
   return $form;
 }
 
+/**
+ * @see uc_stock_report_form()
+ */
 function uc_stock_report_form_submit($form, &$form_state) {
   if ($form_state['values']['threshold']) {
     drupal_goto('admin/store/reports/stock/threshold');
@@ -122,7 +136,14 @@ function uc_stock_report_form_submit($form, &$form_state) {
   }
 }
 
-// Form builder for product stock edit form.
+/**
+ * Form builder for product stock edit form.
+ *
+ * @ingroup forms
+ * @see
+ *   theme_uc_stock_edit_form()
+ *   uc_stock_edit_form_submit()
+ */
 function uc_stock_edit_form($form_state, $node) {
   drupal_set_title(check_plain($node->title));
 
@@ -188,9 +209,13 @@ function uc_stock_edit_form($form_state, $node) {
   return $form;
 }
 
+/**
+ * @ingroup themeable
+ * @see uc_stock_edit_form()
+ */
 function theme_uc_stock_edit_form($form) {
   $header = array(
-    array('data' => t('Active')),
+    array('data' => '&nbsp;&nbsp;'. t('Active')) + theme('table_select_header_cell'),
     array('data' => t('SKU')),
     array('data' => t('Stock')),
     array('data' => t('Threshold')),
@@ -208,6 +233,9 @@ function theme_uc_stock_edit_form($form) {
   return theme('table', $header, $rows) . drupal_render($form);
 }
 
+/**
+ * @see uc_stock_edit_form()
+ */
 function uc_stock_edit_form_submit($form, &$form_state) {
   foreach (element_children($form_state['values']['stock']) as $id) {
     db_query("UPDATE {uc_product_stock} SET active = %d, stock = %d, threshold = %d WHERE sku = '%s'",
@@ -223,4 +251,3 @@ function uc_stock_edit_form_submit($form, &$form_state) {
 
   drupal_set_message(t('Stock settings saved.'));
 }
-

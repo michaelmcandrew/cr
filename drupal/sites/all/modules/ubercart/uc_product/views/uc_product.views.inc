@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_product.views.inc,v 1.1.2.3 2009/02/10 21:58:14 islandusurper Exp $
+// $Id: uc_product.views.inc,v 1.1.2.7 2009/10/20 20:58:06 islandusurper Exp $
 
 /**
  * @file
@@ -47,12 +47,19 @@ function uc_product_views_data() {
     'field' => array(
       'handler' => 'uc_product_handler_field_price',
       'click sortable' => TRUE,
+      'float' => TRUE,
+      'additional fields' => array(
+        'nid' => array(
+          'table' => 'node',
+          'field' => 'nid',
+        ),
+      ),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
+      'handler' => 'views_handler_filter_float',
     ),
   );
 
@@ -62,12 +69,19 @@ function uc_product_views_data() {
     'field' => array(
       'handler' => 'uc_product_handler_field_price',
       'click sortable' => TRUE,
+      'float' => TRUE,
+      'additional fields' => array(
+        'nid' => array(
+          'table' => 'node',
+          'field' => 'nid',
+        ),
+      ),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
+      'handler' => 'views_handler_filter_float',
     ),
   );
 
@@ -77,12 +91,19 @@ function uc_product_views_data() {
     'field' => array(
       'handler' => 'uc_product_handler_field_price',
       'click sortable' => TRUE,
+      'float' => TRUE,
+      'additional fields' => array(
+        'nid' => array(
+          'table' => 'node',
+          'field' => 'nid',
+        ),
+      ),
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
+      'handler' => 'views_handler_filter_float',
     ),
   );
 
@@ -90,14 +111,18 @@ function uc_product_views_data() {
     'title' => t('Weight'),
     'help' => t('The physical weight.'),
     'field' => array(
+      'additional fields' => array(
+        'field' => 'weight_units',
+      ),
       'handler' => 'uc_product_handler_field_weight',
       'click sortable' => TRUE,
+      'float' => TRUE,
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
     ),
     'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
+      'handler' => 'views_handler_filter_float',
     ),
   );
 
@@ -168,10 +193,10 @@ function uc_product_views_handlers() {
     ),
     'handlers' => array(
       'uc_product_handler_field_price' => array(
-        'parent' => 'views_handler_field',
+        'parent' => 'views_handler_field_numeric',
       ),
       'uc_product_handler_field_weight' => array(
-        'parent' => 'views_handler_field',
+        'parent' => 'views_handler_field_numeric',
       ),
       'uc_product_handler_filter_product' => array(
         'parent' => 'views_handler_filter_boolean_operator',
@@ -188,6 +213,8 @@ function uc_product_views_handlers() {
 
 
 /**
+ * Implementation of hook_views_tables_alter().
+ *
  * Conditionally add editablefields support.
  */
 function uc_product_views_tables_alter(&$tables) {

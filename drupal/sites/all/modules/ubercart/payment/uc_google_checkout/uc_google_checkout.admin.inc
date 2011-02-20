@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_google_checkout.admin.inc,v 1.1.2.5 2009/04/28 21:03:15 islandusurper Exp $
+// $Id: uc_google_checkout.admin.inc,v 1.1.2.9 2010/07/12 01:57:44 tr Exp $
 
 /**
  * @file
@@ -314,7 +314,10 @@ function uc_google_checkout_terminal($order) {
   $balance = uc_payment_balance($order);
   $context = array(
     'revision' => 'themed-original',
-    'location' => 'google-checkout-terminal',
+    'type' => 'order_total',
+    'subject' => array(
+      'order' => $order,
+    ),
   );
   $output .= '<p>'. t('Use this terminal to process credit card payments:') .'</p>'
             .'<table style="width: auto;"><tbody style="border-top: 0px;"><tr>'
@@ -325,7 +328,7 @@ function uc_google_checkout_terminal($order) {
            . t('Google Checkout total:') .'</strong></td><td>'
            . uc_price($order->gc_total, $context) .'</td></tr><tr><td><strong>'
            . t('Google Checkout balance:') .'</strong></td<td>'
-           . uc_prcie($gc_balance, $context) .'</td></tr></tbody></table>';
+           . uc_price($gc_balance, $context) .'</td></tr></tbody></table>';
 
   if (in_array($order->financial_state, array('REVIEWING', 'CHARGEABLE', 'CHARGED'))) {
     $output .= drupal_get_form('uc_google_checkout_terminal_form', $order, $gc_balance);
@@ -367,7 +370,7 @@ function uc_google_checkout_terminal_form($form_state, $order, $amount = 0) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'google-checkout-terminal-form',
+    'type' => 'amount',
   );
   $options = array(
     'sign' => FALSE,
@@ -433,4 +436,3 @@ function uc_google_checkout_terminal_form_submit($form, &$form_state) {
     $form_state['redirect'] = uc_google_checkout_refund($form_state['values']['order_id'], $form_state['values']['amount'], $form_state['values']['reason'], $form_state['values']['comment']);
   }
 }
-

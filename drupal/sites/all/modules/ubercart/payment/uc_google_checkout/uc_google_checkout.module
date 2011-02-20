@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_google_checkout.module,v 1.1.2.8 2009/04/28 21:03:15 islandusurper Exp $
+// $Id: uc_google_checkout.module,v 1.1.2.16 2010/01/27 22:23:32 islandusurper Exp $
 
 /**
  * @file
@@ -98,6 +98,9 @@ function uc_google_checkout_init() {
     unset($_SESSION['cart_order'], $_SESSION['do_complete'], $_SESSION['new_user'], $users[$user->uid]);
     variable_set('uc_google_checkout_order_users', $users);
   }
+
+  global $conf;
+  $conf['i18n_variables'][] = 'uc_google_checkout_order_cancel_reason';
 }
 
 function uc_google_checkout_theme() {
@@ -113,20 +116,22 @@ function uc_google_checkout_theme() {
   );
 }
 
-function uc_google_checkout_form_alter(&$form, &$form_state, $form_id) {
-  $node = $form['#node'];
-  if (is_object($node) && $form_id == $node->type .'_node_form' && uc_product_is_product($node->type)) {
-    $policy_url = 'https://checkout.google.com/support/sell/bin/answer.py?answer=75724';
-    $form['google_checkout'] = array('#type' => 'fieldset',
-      '#title' => t('Google Checkout settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['google_checkout']['gc_salable'] = array('#type' => 'checkbox',
-      '#title' => t('Conforms to Google Checkout content policies.'),
-      '#default_value' => isset($node->gc_salable) ? $node->gc_salable : TRUE,
-      '#description' => t('To be a Google Checkout approved merchant, your items must conform to the Google Checkout content policies found <a href="!url">here</a>.', array('!url' => $policy_url)),
-    );
+function uc_google_checkout_form_alter(&$form, $form_state, $form_id) {
+  if (uc_product_is_product_form($form)) {
+    $node = $form['#node'];
+    if (is_object($node) && $form_id == $node->type .'_node_form' && uc_product_is_product($node->type)) {
+      $policy_url = 'https://checkout.google.com/support/sell/bin/answer.py?answer=75724';
+      $form['google_checkout'] = array('#type' => 'fieldset',
+        '#title' => t('Google Checkout settings'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['google_checkout']['gc_salable'] = array('#type' => 'checkbox',
+        '#title' => t('Conforms to Google Checkout content policies.'),
+        '#default_value' => isset($node->gc_salable) ? $node->gc_salable : TRUE,
+        '#description' => t('To be a Google Checkout approved merchant, your items must conform to the Google Checkout content policies found <a href="!url">here</a>.', array('!url' => $policy_url)),
+      );
+    }
   }
   elseif ($form_id == 'uc_payment_methods_form') {
     // Make sure no one enables this for Ubercart checkout.
@@ -364,7 +369,7 @@ function uc_google_checkout_cart_form() {
     $checkout_url = 'https://sandbox.google.com/checkout';
   }
   if (!$merchant_id) {
-    watchdog('uc_google_checkout', 'Google Checkout is enabled, but no Merchant ID found.', array(), WATCHDOG_ERROR, 'admin/store/settings/google_checkout');
+    watchdog('google', 'Google Checkout is enabled, but no Merchant ID found.', array(), WATCHDOG_ERROR, 'admin/store/settings/google_checkout');
     return;
   }
 
@@ -499,7 +504,7 @@ function uc_google_checkout_cart_request($order) {
           if ($settings['fixed_charge']) {
             $context = array(
               'revision' => 'formatted-original',
-              'location' => 'google-checkout-cart-request',
+              'type' => 'amount',
             );
             $options = array(
               'sign' => FALSE,
@@ -620,13 +625,13 @@ function uc_google_checkout_send_request($api, $request) {
   str_replace(array('&amp;', '&lt;', '&gt;'), array('&#x26;', '&#x3c;', '&#x3e;'), $request);
   $response_obj = drupal_http_request($checkout_url .'/api/checkout/v2/'. $api .'/Merchant/'. $merchant_id, uc_google_checkout_headers(), 'POST', $request);
   if ($response_obj->error) {
-    watchdog('google', check_plain($response_obj->error), NULL, WATCHDOG_ERROR);
+    watchdog('google', '@error', array('@error' => $response_obj->error), WATCHDOG_ERROR);
   }
   $response = new SimpleXMLElement($response_obj->data);
   if ($response->getName() == 'error') {
     $error = (string)$response->{'error-message'};
     drupal_set_message($error, 'error');
-    watchdog('google', check_plain($error), NULL, WATCHDOG_ERROR);
+    watchdog('google', '@error', array('@error' => $error), WATCHDOG_ERROR);
     return NULL;
   }
 
@@ -648,7 +653,7 @@ function uc_google_checkout_send_request($api, $request) {
   if (empty($_SESSION['messages']['error'])) {
     unset($_SESSION['messages']['error']);
   }
-  db_query("DELETE FROM {watchdog} WHERE type = 'php' AND message LIKE '%%SSL: fatal protocol error%%'");
+  db_query("DELETE FROM {watchdog} WHERE type = 'php' AND variables LIKE '%%SSL: fatal protocol error%%'");
   // End of ugly hack.
 
   return $response;
@@ -937,7 +942,7 @@ function uc_google_checkout_charge_order($charge) {
                      '', t('Payment received by Google Checkout'));
     $context = array(
       'revision' => 'formatted-original',
-      'location' => 'google-checkout-charge-comment',
+      'type' => 'amount',
     );
     uc_order_comment_save($order_id, 0, t('Payment of %amount received by Google Checkout.', array('%amount' => uc_price($charge->{'latest-charge-amount'}, $context))), 'admin', 'chargeable');
     uc_google_checkout_notification_acknowledgement($charge['serial-number']);
@@ -972,7 +977,7 @@ function uc_google_checkout_refund_order($refund) {
                      0, '', t('Refund received by Google Checkout'));
     $context = array(
       'revision' => 'formatted-original',
-      'location' => 'google-checkout-refund-comment',
+      'type' => 'amount',
     );
     uc_order_comment_save($order_id, 0, t('Refund of %amount received by Google Checkout.', array('%amount' => uc_price($refund->{'latest-refund-amount'}, $context))),
                           'admin', 'processing');
@@ -997,7 +1002,7 @@ function uc_google_checkout_buyer_message_request($order_id, $message) {
   $output .= "\n";
   $output .= '<send-buyer-message xmlns="http://checkout.google.com/schema/2" google-order-number="'. $google_order_number .'">';
   $output .= '<message>'. check_plain($message) .'</message>';
-  $output .= '<send-email>'. (module_exists('uc_notify') && variable_get('uc_notify_order_update_enabled', TRUE) ? 'true' : 'false') .'</send-email>';
+  $output .= '<send-email>true</send-email>';
   $output .= '</send-buyer-message>';
 
   return $output;
@@ -1026,12 +1031,12 @@ function uc_google_checkout_notification_acknowledgement($serial_number) {
   exit();
 }
 
-function uc_google_checkout_notificiation_error($message = NULL) {
+function uc_google_checkout_notification_error($message = NULL) {
   if (is_null($message)) {
     $message = t('Unknown order id or malformed XML.');
   }
   drupal_set_header('HTTP/1.1 400 Bad Request');
-  watchdog('google', $message, NULL, WATCHDOG_ERROR);
+  watchdog('google', '!message', array('!message' => $message), WATCHDOG_ERROR);
   exit();
 }
 

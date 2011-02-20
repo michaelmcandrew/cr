@@ -1,5 +1,5 @@
 <?php
-// $Id: australia_36_2.cif,v 1.2.2.4 2008/11/03 21:33:50 islandusurper Exp $
+// $Id: australia_36_2.cif,v 1.2.2.7 2010/04/14 05:18:19 tr Exp $
 
 /**
  * First implement hook_install() using the name of the country as the base of
@@ -8,18 +8,23 @@
 function australia_install() {
   // Make the entry in the country table.
   // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
-  db_query("INSERT INTO {uc_countries} VALUES (036, 'Australia', 'AU', 'AUS', 2)");
+  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES (036, 'Australia', 'AU', 'AUS', 2)");
 
   // Make the entries in the zones table.
-  db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES "
-          ."(036, 'NSW', 'New South Wales'),"
-          ."(036, 'QLD', 'Queensland'),"
-          ."(036, 'SA', 'South Australia'),"
-          ."(036, 'TAS', 'Tasmania'),"
-          ."(036, 'VIC', 'Victoria'),"
-          ."(036, 'WA', 'Western Australia'),"
-          ."(036, 'NT', 'Northern Territory'),"
-          ."(036, 'ACT', 'Australian Capital Territory')");
+  $zones = array(
+    array(36, 'NSW', 'New South Wales'),
+    array(36, 'QLD', 'Queensland'),
+    array(36, 'SA', 'South Australia'),
+    array(36, 'TAS', 'Tasmania'),
+    array(36, 'VIC', 'Victoria'),
+    array(36, 'WA', 'Western Australia'),
+    array(36, 'NT', 'Northern Territory'),
+    array(36, 'ACT', 'Australian Capital Territory'),
+  );
+
+  foreach ($zones as $zone) {
+    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+  }
 
   // Use uc_set_address_format() with the country ID as the first argument and
   // an address format string as the second.  Documentation on address formats
@@ -41,14 +46,4 @@ function australia_update($version) {
       db_query("UPDATE {uc_countries} SET  country_iso_code_3 = 'AUS' WHERE country_id = 36");
     break;
   }
-}
-
-/**
- * If necessary, implement hook_uninstall().  This requires no argument.  The
- * store module automatically removes rows from the country and zones tables
- * related to the country, and it unsets the address format.  This function is
- * only necessary for other things you may have included in your country's
- * installation process.
- */
-function australia_uninstall() {
 }

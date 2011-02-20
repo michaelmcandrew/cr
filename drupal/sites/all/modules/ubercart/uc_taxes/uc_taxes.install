@@ -1,33 +1,41 @@
 <?php
-// $Id: uc_taxes.install,v 1.10.2.6 2009/02/24 15:35:48 islandusurper Exp $
+// $Id: uc_taxes.install,v 1.10.2.9 2010/03/19 21:27:18 tr Exp $
 
 /**
  * @file
  * Install hooks for uc_taxes.module.
  */
 
+/**
+ * Implementation of hook_schema().
+ */
 function uc_taxes_schema() {
   $schema = array();
 
   $schema['uc_taxes'] = array(
+    'description' => 'Stores tax information.',
     'fields' => array(
       'id' => array(
+        'description' => 'Primary key: Unique tax rate id.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'name' => array(
+        'description' => 'The tax rate name.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'rate' => array(
+        'description' => 'The tax rate multiplier.',
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'shippable' => array(
+        'description' => 'Flag that describes how this rate applies to shippable and non-shippable products. 0 => Disregard shipability. 1 => Apply tax to shippable products only.',
         'type' => 'int',
         'size' => 'tiny',
         'unsigned' => TRUE,
@@ -35,14 +43,17 @@ function uc_taxes_schema() {
         'default' => 0,
       ),
       'taxed_product_types' => array(
-        'description' => t('Serialized array of node types to be taxed.'),
+        'description' => 'Serialized array of node types to be taxed.',
         'type' => 'text',
+        'serialize' => TRUE,
       ),
       'taxed_line_items' => array(
-        'description' => t('Serialized array of line item types to be taxed.'),
+        'description' => 'Serialized array of line item types to be taxed.',
         'type' => 'text',
+        'serialize' => TRUE,
       ),
       'weight' => array(
+        'description' => 'The weight of this tax rate in relation to other rates.',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
@@ -55,10 +66,16 @@ function uc_taxes_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_taxes_install() {
   drupal_install_schema('uc_taxes');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_taxes_uninstall() {
   drupal_uninstall_schema('uc_taxes');
 }
@@ -240,7 +257,9 @@ function uc_taxes_update_6000() {
   return $ret;
 }
 
-// Change to signed floats...
+/**
+ * Change to signed floats.
+ */
 function uc_taxes_update_6001() {
   $ret = array();
 

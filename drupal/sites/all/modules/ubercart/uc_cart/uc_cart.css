@@ -1,9 +1,9 @@
-/* $Id: uc_cart.css,v 1.5.2.4 2009/02/04 13:44:31 islandusurper Exp $ */
+/* $Id: uc_cart.css,v 1.5.2.5 2009/07/21 14:51:20 islandusurper Exp $ */
 
 /* These classes should really be universal... pretty standard stuff. */
 
 .solid-border {
-  border: none 1px #bbb;
+  border: solid 1px #bbb;
   padding: 5px;
 }
 
@@ -105,13 +105,21 @@
 
 #cart-form-products {
   width: 100%;
-  border: none 1px #bbb;
+  border: solid 1px #bbb;
   margin-top: .5em;
+}
+
+#cart-form-products td.desc {
+  width: 100%;
+}
+
+#cart-form-products td.total, #cart-form-products td.subtotal {
+  white-space: nowrap;
 }
 
 #cart-form-buttons {
   width: 100%;
-  border: none 1px #bbb;
+  border: solid 1px #bbb;
   margin: .5em 0em;
   text-align: right;
 }
@@ -146,7 +154,7 @@
  */
 
 .cart-review {
-  border: none 1px #bbb;
+  border: solid 1px #bbb;
 }
 
 .cart-review td {
@@ -233,7 +241,7 @@ td.subtotal {
 
 #checkout-form-bottom {
   width: 100%;
-  border: none 1px #bbb;
+  border: solid 1px #bbb;
   text-align: right;
 }
 

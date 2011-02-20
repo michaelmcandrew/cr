@@ -1,5 +1,5 @@
 <?php
-// $Id: select.inc,v 1.22.2.28 2009/02/15 23:51:36 quicksketch Exp $
+// $Id: select.inc,v 1.22.2.31 2010/02/07 04:48:36 quicksketch Exp $
 
 /**
  * @file
@@ -151,7 +151,7 @@ function _webform_render_select($component) {
   $default_value = _webform_filter_values($component['value'], NULL, NULL, FALSE);
   $options = _webform_select_options($component['extra']['items'], $component['extra']['aslist'] !== 'Y');
 
-  if ($component['extra']['aslist'] === 'Y' && $component['extra']['multiple'] !== 'Y') {
+  if ($component['extra']['aslist'] === 'Y' && $component['extra']['multiple'] !== 'Y' && !($component['mandatory'] && !empty($component['value']))) {
     $options = array('' => t('select...')) + $options;
   }
 
@@ -204,14 +204,14 @@ function webform_expand_checkboxes($element) {
   $default_value = array();
   foreach (element_children($element) as $key) {
     if (isset($element[$key]['#default_value'])) {
-      $default_value[] = $key;
+      $default_value[$key] = $element[$key]['#default_value'];
       unset($element[$key]);
     }
   }
 
   $element = expand_checkboxes($element);
-  foreach ($default_value as $key) {
-    $element[$key]['#default_value'] = 1;
+  foreach ($default_value as $key=>$val) {
+    $element[$key]['#default_value'] = $val;
   }
   return $element;
 }
@@ -344,20 +344,25 @@ function _webform_theme_select() {
  * @param $component
  *   An array of information describing the component, directly correlating to
  *   the webform_component database schema
+ * @param $sids
+ *   An optional array of submission IDs (sid). If supplied, the analysis will be limited
+ *   to these sids.
  * @return
  *   An array of data rows, each containing a statistic for this component's
  *   submissions.
  */
-function _webform_analysis_rows_select($component) {
+function _webform_analysis_rows_select($component, $sids = array()) {
   $options = _webform_select_options($component['extra']['items'], TRUE);
+  $placeholders = count($sids) ? array_fill(0, count($sids), "'%s'") : array();
+  $sidfilter = count($sids) ? " AND sid in (".implode(",", $placeholders).")" : "";
 
   $query = 'SELECT data, count(data) as datacount '.
     ' FROM {webform_submitted_data} '.
     ' WHERE nid = %d '.
     ' AND cid = %d '.
-    " AND data != '0' AND data != '' ".
+    " AND data != '0' AND data != '' $sidfilter ".
     ' GROUP BY data ';
-  $result = db_query($query, $component['nid'], $component['cid']);
+  $result = db_query($query, array_merge(array($component['nid'], $component['cid']), $sids));
   $rows = array();
   while ($data = db_fetch_array($result)) {
     if (isset($options[$data['data']])) {

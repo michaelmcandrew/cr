@@ -1,4 +1,10 @@
 <?php
+// $Id: uc_price.inc,v 1.1.2.6 2010/07/12 22:51:30 tr Exp $
+
+/**
+ * @file
+ * Price handling functions and hooks.
+ */
 
 /**
  * The heart of the price modification/displaying system,
@@ -85,7 +91,8 @@ function uc_price($price_info, $context, $options = array()) {
   );
 
   $context += array(
-    'revision' => 'themed'
+    'revision' => 'themed',
+    'type' => 'amount',
   );
 
   // Clamp to allowed revisions.
@@ -110,7 +117,14 @@ function uc_price($price_info, $context, $options = array()) {
   // an array with a limited set of keys that don't change every pageload; the
   // uid, name, mail, and roles of the user account.
   $context_clone = $context;
-  $context_clone['account'] = array_intersect_key((array) $context['account'], drupal_map_assoc(array('uid', 'name', 'mail', 'roles')));
+  // TODO: array_intersect_key() isn't available until PHP 5.1.0. (Drupal 7)
+  //$context_clone['account'] = array_intersect_key((array) $context['account'], drupal_map_assoc(array()));
+  $context_clone['account'] = array(
+    'uid' => $context['account']->uid,
+    'name' => $context['account']->name,
+    'mail' => $context['account']->mail,
+    'roles' => $context['account']->roles,
+  );
 
   $key = md5(serialize($price_info + $context_clone + $options));
 
@@ -233,10 +247,14 @@ function _uc_price_get_handlers($options = array()) {
     );
 
     foreach ($hooks as $hook) {
-      $handlers['alterers'][] = $hook['alter']['callback'];
-      $handlers['formatters'][] = $hook['format']['callback'];
+      if (isset($hook['alter']['callback']) && function_exists($hook['alter']['callback'])) {
+        $handlers['alterers'][] = $hook['alter']['callback'];
+      }
+      if (isset($hook['format']['callback']) && function_exists($hook['format']['callback'])) {
+        $handlers['formatters'][] = $hook['format']['callback'];
+      }
 
-      if (is_array($hook['options'])) {
+      if (isset($hook['options']) && is_array($hook['options'])) {
         $handlers['options'] += $hook['options'];
       }
     }
@@ -317,4 +335,3 @@ function uc_store_price_handler_format($price, $options) {
 
   return $output;
 }
-

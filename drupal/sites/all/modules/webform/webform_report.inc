@@ -1,5 +1,5 @@
 <?php
-// $Id: webform_report.inc,v 1.17.2.14 2009/02/14 03:19:01 quicksketch Exp $
+// $Id: webform_report.inc,v 1.17.2.16 2010/02/28 23:14:58 quicksketch Exp $
 
 /**
  * @file
@@ -462,7 +462,7 @@ function webform_results_download($node, $format = 'delimiter', $options = array
 /**
  * Provides a simple analysis of all submissions to a webform.
  */
-function webform_results_analysis($node) {
+function webform_results_analysis($node, $sids = array()) {
   $rows = array();
   $question_number = 0;
 
@@ -473,12 +473,12 @@ function webform_results_analysis($node) {
 
   webform_load_components(); // Load all component types.
   foreach ($node->webform['components'] as $component) {
-    $question_number++;
 
     // Do component specific call.
     $analysis_function = '_webform_analysis_rows_'. $component['type'];
     if (function_exists($analysis_function)) {
-      $crows = $analysis_function($component);
+      $question_number++;
+      $crows = $analysis_function($component, $sids);
       if (is_array($crows)) {
         $row[0] = array('data' => '<strong>'. $question_number .'</strong>', 'rowspan' => count($crows) + 1, 'valign' => 'top');
         $row[1] = array('data' => '<strong>'. $component['name'] .'</strong>', 'colspan' => '10');

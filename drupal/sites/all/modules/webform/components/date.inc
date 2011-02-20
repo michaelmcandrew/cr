@@ -1,5 +1,5 @@
 <?php
-// $Id: date.inc,v 1.15.2.17 2009/01/10 02:12:14 quicksketch Exp $
+// $Id: date.inc,v 1.15.2.24 2010/07/27 06:16:50 quicksketch Exp $
 
 /**
  * @file
@@ -43,7 +43,7 @@ function _webform_edit_date($currfield) {
     '#type' => 'textfield',
     '#title' => t('Default value'),
     '#default_value' => $currfield['value'],
-    '#description' => t('The default value of the field.') .'<br />'. t('Accepts any date in any <a href="http://www.gnu.org/software/tar/manual/html_node/tar_109.html">GNU Date Input Format</a>. Strings such as today, +2 months, and Dec 9 2004 are all valid.'),
+    '#description' => t('The default value of the field.') .'<br />'. t('Accepts any date in any <a href="http://www.gnu.org/software/tar/manual/html_chapter/Date-input-formats.html">GNU Date Input Format</a>. Strings such as today, +2 months, and Dec 9 2004 are all valid.'),
     '#size' => 60,
     '#maxlength' => 127,
     '#weight' => 0,
@@ -174,9 +174,6 @@ function webform_expand_date($element) {
   // Let Drupal do it's normal expansion.
   $element = expand_date($element);
 
-  // Don't use Drupal's validation though.
-  $element['#element_validate'] = array('webform_validate_date');
-
   // Set default values.
   foreach ($default_values as $type => $value) {
     switch ($type) {
@@ -297,7 +294,7 @@ function theme_webform_mail_date($data, $component) {
   if ($data[0] && $data[1]) {
     $timestamp = strtotime($data[0] .'/'. $data[1] .'/'. $data[2]);
     $format = webform_date_format('medium');
-    $output .= ' '. date($format, $timestamp);
+    $output .= ' '. format_date($timestamp, 'custom', $format, 0);
   }
 
   return $output;
@@ -334,21 +331,26 @@ function _webform_theme_date() {
  * @param $component
  *   An array of information describing the component, directly correlating to
  *   the webform_component database schema
+ * @param $sids
+ *   An optional array of submission IDs (sid). If supplied, the analysis will be limited
+ *   to these sids.
  * @return
  *   An array of data rows, each containing a statistic for this component's
  *   submissions.
  */
-function _webform_analysis_rows_date($component) {
+function _webform_analysis_rows_date($component, $sids = array()) {
+  $placeholders = count($sids) ? array_fill(0, count($sids), "'%s'") : array();
+  $sidfilter = count($sids) ? " AND sid in (".implode(",", $placeholders).")" : "";
   $query = 'SELECT no,data '.
     ' FROM {webform_submitted_data} '.
     ' WHERE nid = %d '.
-    ' AND  cid = %d '.
+    ' AND  cid = %d '. $sidfilter.
     ' ORDER BY sid,no ASC ';
 
-  $result = db_query($query, $component['nid'], $component['cid']);
+  $result = db_query($query, array_merge(array($component['nid'], $component['cid']), $sids));
   // build an array of timestamps from entered values.
   $timestamps = array();
-  $submissions = 1;
+  $submissions = 0;
   while ($row = db_fetch_array($result)) {
     if ($row['no'] == '0') {
       $submissions++;
@@ -396,7 +398,9 @@ function _webform_analysis_rows_date($component) {
  */
 function _webform_table_data_date($data) {
   if (drupal_strlen($data['value']['0']) > 0 && drupal_strlen($data['value']['1']) > 0 && drupal_strlen($data['value']['2']) > 0) {
-    return check_plain($data['value']['0'] .'/'. $data['value']['1'] .'/'. $data['value']['2']);
+    $timestamp = strtotime($data['value']['0'] .'/'. $data['value']['1'] .'/'. $data['value']['2']);
+    $format = webform_date_format('short');
+    return date($format, $timestamp);
   }
   else {
     return '';

@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_cybersource.module,v 1.4.2.7 2009/04/28 21:03:16 islandusurper Exp $
+// $Id: uc_cybersource.module,v 1.4.2.13 2010/07/12 01:57:43 tr Exp $
 
 /**
  * @file
@@ -37,7 +37,7 @@ function uc_cybersource_receipt_access() {
 /**
  * Implementation of hook_form_alter().
  */
-function uc_cybersource_form_alter(&$form, &$form_state, $form_id) {
+function uc_cybersource_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'uc_payment_gateways_form') {
     $form['#submit'][] = 'uc_cybersource_payment_gateway_settings_submit';
   }
@@ -220,7 +220,7 @@ function uc_cybersource_charge($order_id, $amount, $data) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'cybersource-charge',
+    'type' => 'amount',
   );
   $options = array(
     'sign' => FALSE,
@@ -347,7 +347,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
 
   $data = '';
   while (list($key, $value) = each($request)) {
-    $data .= $key .'='. urlencode(ereg_replace(',', '', $value)) .'&';
+    $data .= $key .'='. urlencode(str_replace(',', '', $value)) .'&';
   }
   $data = substr($data, 0, -1);
 
@@ -369,7 +369,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
   $response = curl_exec($ch);
   if ($error = curl_error($ch)) {
-    watchdog('uc_cybersource', $error, WATCHDOG_ERROR);
+    watchdog('uc_cybersource', '@error', array('@error' => $error), WATCHDOG_ERROR);
   }
   curl_close($ch);
 
@@ -382,7 +382,7 @@ function _uc_cybersource_post_charge($order, $amount, $data, $cc_type, $country)
     // Create the order and payment ledger comments.
     $context = array(
       'revision' => 'formatted-original',
-      'location' => 'cybersource-post-charge',
+      'type' => 'amount',
     );
     $o_comment = t('<b>Credit card !type:</b> !amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('!type' => variable_get('uc_cybersource_transaction_type', 'sale'), '!amount' => uc_price($nvp['orderAmount'], $context), '@decision' => $nvp['decision'], '!reason' => _parse_cs_reason_code($nvp['reasonCode'])));
     $p_comment = t('!id<br />!decision, Reason: !reason', array('!id' => $nvp['orderPage_serialNumber'], '!decision' => $nvp['decision'], '!reason' => $nvp['reasonCode']));
@@ -553,7 +553,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
 
     // Separately add products and line item into the request items object if
     // we're charging the full order total.
-    if ($amount == $order->order_total) {
+    if (round($amount, 2) == round($order->order_total, 2)) {
       $request->item = array();
       $counter = 0;
 
@@ -609,7 +609,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
     // Create the order and payment ledger comments.
     $context = array(
       'revision' => 'formatted-original',
-      'location' => 'cybersource-soap-charge',
+      'type' => 'amount',
     );
     $o_comment = t('<b>@type:</b> @amount<br /><b>Decision: @decision</b><br /><b>Reason:</b> !reason', array('@type' => $types[$data['txn_type']], '@amount' => uc_price($amount, $context), '@decision' => $reply->decision, '!reason' => _parse_cs_reason_code($reply->reasonCode)));
     $p_comment = t('<b>@type:</b><br />@id<br />@decision, Reason: !reason', array('@type' => $types[$data['txn_type']], '@id' => $reply->requestID, '@decision' => $reply->decision, '!reason' => $reply->reasonCode));
@@ -619,7 +619,7 @@ function _uc_cybersource_soap_charge($order, $amount, $data, $cc_type, $country)
       $p_comment .= t(', AVS: @avs', array('@avs' => $reply->ccAuthReply->avsCode));
     }
     if (!empty($reply->ccAuthReply->cvCode)) {
-      $o_comment .= '<br />'. t('<b>CVV:</b> @cvv', array('!cvv' => _parse_cs_cvv_code($reply->ccAuthReply->cvCode)));
+      $o_comment .= '<br />'. t('<b>CVV:</b> @cvv', array('@cvv' => _parse_cs_cvv_code($reply->ccAuthReply->cvCode)));
       $p_comment .= t(', CVV: @cvv', array('@cvv' => $reply->ccAuthReply->cvCode));
     }
     uc_order_comment_save($order->order_id, $user->uid, $o_comment, 'admin');
@@ -694,7 +694,7 @@ function uc_cybersource_tax_test($order) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'cybersource-tax-test',
+    'type' => 'line_item',
   );
 
   // Build an item list for the taxes.
@@ -913,7 +913,7 @@ function uc_cybersource_calculate_tax($order) {
       if ($total != floatval($reply->taxReply->totalTaxAmount)) {
         $context = array(
           'revision' => 'formatted-original',
-          'location' => 'cybersource-calculate-tax',
+          'type' => 'amount',
         );
         watchdog('uc_cybersource', 'Tax calculation produced uneven results. Expected a total of @total, received the following: @dump', array('@total' => uc_price($reply->taxReply->totalTaxAmount, $context), '@dump' => '<pre>'. print_r($result, TRUE) .'</pre>'), WATCHDOG_ERROR);
 
@@ -1163,4 +1163,3 @@ function _parse_cs_cvv_code($code) {
       return t('No result code returned by processor.');
   }
 }
-

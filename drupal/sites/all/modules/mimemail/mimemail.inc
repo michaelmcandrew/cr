@@ -1,5 +1,5 @@
 <?php
-/* $Id: mimemail.inc,v 1.40 2009/02/23 16:11:19 jerdavis Exp $ */
+/* $Id: mimemail.inc,v 1.31.2.5 2010/11/06 18:15:50 sgabe Exp $ */
 
 /**
  * @file
@@ -44,15 +44,15 @@ function mimemail_rfc_headers($headers) {
  * @param $headers An array of headers
  * @return header string.
  */
-function mimemail_headers($headers, $from = '') {
+function mimemail_headers($headers, $from = NULL) {
   // Note: This may not work. The MTA may rewrite the Return-Path, and Errors-To is deprecated.
-  if (!$from) {
-    $from = variable_get('site_mail', ini_get('sendmail_from'));
+
+  // Allow a mail to overwrite standard headers.
+  if (!is_null($from)) {
+    preg_match('/[a-z0-9\-\.]+@{1}[a-z0-9\-\.]+/i', $from, $matches);
+    $from_email = $matches[0];
+    $headers = array_merge($headers, array('From' => $from, 'Sender' => $from, 'Return-Path' => "<$from_email>", 'Errors-To' => $from));
   }
-  preg_match('/[a-z0-9\-\.]+@{1}[a-z0-9\-\.]+/i', $from, $matches);
-  $from_email = $matches[0];
-  // allow a mail to overwrite standard headers.
-  $headers = array_merge(array('Return-Path' => "<$from_email>", 'Errors-To' => $from, 'From' => $from, 'Content-Type' => 'text/plain; charset=utf-8; format=flowed'), $headers);
 
   // Run all headers through mime_header_encode() to convert non-ascii
   // characters to an rfc compliant string, similar to drupal_mail().
@@ -84,9 +84,8 @@ function mimemail_headers($headers, $from = '') {
  *                  )
  */
 function mimemail_extract_files($html) {
-  $pattern = '/(<link[^>]+href=[\'"]?|<object[^>]+codebase=[\'"]?|@import |src=[\'"]?)([^\'>"]+)([\'"]?)/emis';
-  $replace = 'stripslashes("\\1")._mimemail_file("\\2").stripslashes("\\3")';
-  $html = preg_replace($pattern, $replace, $html);
+  $pattern = '/(<link[^>]+href=[\'"]?|<object[^>]+codebase=[\'"]?|@import |[\s]src=[\'"]?)([^\'>"]+)([\'"]?)/mis';
+  $html = preg_replace_callback($pattern, '_mimemail_replace_files', $html);
 
   $document = array(array(
     'Content-Type' => "text/html; charset=utf-8",
@@ -97,6 +96,13 @@ function mimemail_extract_files($html) {
   $files = _mimemail_file();
 
   return array_merge($document, $files);
+}
+
+/**
+ * Callback for preg_replace_callback()
+ */
+function _mimemail_replace_files($matches) {
+  return stripslashes($matches[1]) . _mimemail_file($matches[2]) . stripslashes($matches[3]);
 }
 
 /**
@@ -114,22 +120,29 @@ function _mimemail_file($url = NULL, $name = '', $type = '', $disposition = 'rel
     $url = _mimemail_url($url, 'TRUE');
 
     // If the $url is absolute, we're done here.
-    if (strpos($url, '://') || preg_match('!mailto:!', $url)) {
+    if (strpos($url, '://') !== FALSE || preg_match('!mailto:!', $url)) {
       return $url;
     }
-    else {
     // The $url is a relative file path, continue processing.
-      $file = $url;
+    else {
+      // Download method is private, and the $url needs conversion.
+      if (variable_get('file_downloads', FILE_DOWNLOADS_PUBLIC) == FILE_DOWNLOADS_PRIVATE && strpos($url, 'system/files/') !== FALSE) {
+        $file = file_create_path(drupal_substr($url, (strpos($url, 'system/files/') + drupal_strlen('system/files/'))));
+      }
+      // Download method is public.
+      else {
+        $file = $url;
+      }
     }
   }
 
-  if ($file && file_exists($file)) {
-    // Prevent duplicate items
+  if (isset($file) && @file_exists($file)) {
+    // Prevent duplicate items.
     if (isset($filenames[$file])) return 'cid:'. $filenames[$file];
-    
+
     $content_id = md5($file) .'@'. $_SERVER['HTTP_HOST'];
 
-    if (!$name) $name = substr($file, strrpos($file, '/') + 1);
+    if (!$name) $name = drupal_substr($file, strrpos($file, '/') + 1);
 
     $new_file = array(
       'name' => $name,
@@ -137,16 +150,22 @@ function _mimemail_file($url = NULL, $name = '', $type = '', $disposition = 'rel
       'Content-ID' => $content_id,
       'Content-Disposition' => $disposition,
     );
-    $new_file['Content-Type'] = file_get_mimetype($file);
+
+    $new_file['Content-Type'] = (!empty($name)) ? file_get_mimetype($name) : file_get_mimetype($file);
 
     $files[] = $new_file;
     $filenames[$file] = $content_id;
 
     return 'cid:'. $content_id;
   }
+  // The $file is not exist, return the $url if possible.
+  elseif ($url) {
+    return $url;
+  }
 
   $ret = $files;
   $files = array();
+  $filenames = array();
   return $ret;
 }
 
@@ -210,7 +229,7 @@ function mimemail_multipart_body($parts, $content_type = 'multipart/mixed; chars
       $part_headers['Content-Disposition'] = 'inline';
     }
 
-    if ($part['Content-Transfer-Encoding']) {
+    if (isset($part['Content-Transfer-Encoding'])) {
       $part_headers['Content-Transfer-Encoding'] = $part['Content-Transfer-Encoding'];
     }
 
@@ -241,7 +260,9 @@ function mimemail_multipart_body($parts, $content_type = 'multipart/mixed; chars
         $part_headers['Content-Disposition'] .= '; filename="'. $part['name'] .'"';
       }
 
-      $part_body = chunk_split(base64_encode(file_get_contents($part['file'])));
+      if (isset($part['file'])) {
+        $part_body = chunk_split(base64_encode(file_get_contents($part['file'])));
+      }
     }
 
     $body .= "\n--$boundary\n";
@@ -251,6 +272,13 @@ function mimemail_multipart_body($parts, $content_type = 'multipart/mixed; chars
   $body .= "\n--$boundary--\n";
 
   return array('headers' => $headers, 'body' => $body);
+}
+
+/**
+ * Callback for preg_replace_callback()
+ */
+function _mimemail_expand_links($matches) {
+  return $matches[1] . _mimemail_url($matches[2]);
 }
 
 /**
@@ -269,16 +297,17 @@ function mimemail_multipart_body($parts, $content_type = 'multipart/mixed; chars
  * image/attachment
  */
 function mimemail_html_body($body, $subject, $plaintext = FALSE, $text = NULL, $attachments = array()) {
-  if (is_null($text)) {
+  if (empty($text)) {
     // todo: remove this preg_replace once filter_xss() is properly handling
     // direct descendant css selectors '>' in inline CSS. For now this cleans
     // up our plain text part. See mimemail #364198, drupal #370903
-    $text = preg_replace('|<style.*</style>|mis', '', $body);
+    $text = preg_replace('|<style.*?</style>|mis', '', $body);
     $text = drupal_html_to_text($text);
   }
   if ($plaintext) {
     //Plain mail without attachment
     if (empty($attachments)) {
+      $content_type = 'text/plain';
       return array(
         'body' => $text,
         'headers' => array('Content-Type' => 'text/plain; charset=utf-8'),
@@ -286,39 +315,43 @@ function mimemail_html_body($body, $subject, $plaintext = FALSE, $text = NULL, $
     }
     //Plain mail has attachement
     else {
+      $content_type = 'multipart/mixed';
       $parts = array(array(
       'content' => $text,
         'Content-Type' => 'text/plain; charset=utf-8',
       ));
     }
   }
-  $content_type = 'multipart/alternative';
+  else {
+    $content_type = 'multipart/related; type="multipart/alternative"';
 
-  $text_part = array('Content-Type' => 'text/plain; charset=utf-8', 'content' => $text);
+    $text_part = array('Content-Type' => 'text/plain; charset=utf-8', 'content' => $text);
 
-  //expand all local links
-  $pattern = '/(<a[^>]+href=")([^"]*)/emi';
-  $body = preg_replace($pattern, '"\\1"._mimemail_url("\2")', $body);
+    //expand all local links
+    $pattern = '/(<a[^>]+href=")([^"]*)/mi';
+    $body = preg_replace_callback($pattern, '_mimemail_expand_links', $body);
 
-  $mime_parts = mimemail_extract_files($body);
+    $mime_parts = mimemail_extract_files($body);
 
-  $content = array($text_part, array_shift($mime_parts));
-  $content = mimemail_multipart_body($content, $content_type, TRUE);
-  $parts = array(array('Content-Type' => $content['headers']['Content-Type'], 'content' => $content['body']));
+    $content = array($text_part, array_shift($mime_parts));
+    $content = mimemail_multipart_body($content, 'multipart/alternative', TRUE);
+    $parts = array(array('Content-Type' => $content['headers']['Content-Type'], 'content' => $content['body']));
 
-  if ($mime_parts) {
-    $content_type = 'multipart/related';
-    $parts = array_merge($parts, $mime_parts);
+    if ($mime_parts) {
+      $parts = array_merge($parts, $mime_parts);
+    }
   }
 
   foreach ($attachments as $a) {
     $a = (object) $a;
-    $content_type = 'multipart/mixed';
-    _mimemail_file($a->filepath, $a->filename, $a->filemime, 'attachment');
-    $parts = array_merge($parts, _mimemail_file());
+    // Check the list parameter if its set or ignore it (Upload module support).
+    if(!isset($a->list) || $a->list) {
+      _mimemail_file($a->filepath, $a->filename, $a->filemime, 'attachment');
+      $parts = array_merge($parts, _mimemail_file());
+    }
   }
 
-  return mimemail_multipart_body($parts, "$content_type; charset=utf-8");
+  return mimemail_multipart_body($parts, $content_type);
 }
 
 function mimemail_parse($message) {
@@ -493,7 +526,7 @@ function _mimemail_url($url, $embed_file = NULL) {
   $url = urldecode($url);
 
   // If the URL is absolute or a mailto, return it as-is.
-  if (strpos($url, '://') || preg_match('!mailto:!', $url)) {
+  if (strpos($url, '://') !== FALSE || preg_match('!mailto:!', $url)) {
     $url = str_replace(' ', '%20', $url);
     return $url;
   }
@@ -561,7 +594,12 @@ function mimemail_address($address) {
 
   // it's a user object
   if (is_object($address) && isset($address->mail)) {
-    return '"'. addslashes(mime_header_encode($address->name)) .'" <'. $address->mail .'>';
+    if (empty($address->name)) {
+      return $address->mail;
+    }
+    else {
+      return '"'. addslashes(mime_header_encode($address->name)) .'" <'. $address->mail .'>';
+    }
   }
 
   // it's formatted or unformatted string

@@ -1,5 +1,5 @@
 <?php
-// $Id: computed_field.module,v 1.17.2.8 2009/07/31 23:38:42 pl2 Exp $
+// $Id: computed_field.module,v 1.17.2.12 2010/10/13 02:31:51 moonshine Exp $
 
 /**
  * Implementation of cck hook_field_info()
@@ -56,7 +56,7 @@ function computed_field_field_settings($op, $field) {
       }
       $form['store'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Store using the database settings below'),
+        '#title' => t('Store using the database settings below (required for Views use)'),
         '#default_value' => is_numeric($field['store']) ? $field['store'] : 1 ,
       );
       $form['database'] = array('#type' => 'fieldset', '#title' => t('Database Storage Settings'));
@@ -190,8 +190,7 @@ function computed_field_field($op, &$node, $field, &$node_field, $teaser, $page)
       break;
     case 'validate':
       break;
-    case 'insert':
-    case 'update':
+    case 'presave':
       _computed_field_compute_value($node, $field, $node_field);
       break;
   }
@@ -347,8 +346,11 @@ function theme_computed_field_formatter_computed_value($element) {
 /**
  * Implementation of cck hook_content_is_empty().
  */
-function computed_field_content_is_empty() {
-  return FALSE;
+function computed_field_content_is_empty($item, $field) {
+  if ($field['data_type'] == 'int' || $field['data_type'] == 'float') {
+    return !is_numeric($item['value']);
+  }
+  return empty($item['value']);
 }
 
 /**
@@ -375,4 +377,18 @@ function computed_field_token_values($type, $object = NULL, $options = array()) 
     $tokens['formatted'] = $item['view'];
     return $tokens;
   }
+}
+
+/**
+ * Implementation of hook_content_multigroup_allowed_widgets().
+ */
+function computed_field_content_multigroup_allowed_widgets() {
+  return array('computed');
+}
+
+/**
++ * Implementation of hook_content_multigroup_no_remove_widgets().
++ */
+function computed_field_content_multigroup_no_remove_widgets() {
+  return array('computed');
 }

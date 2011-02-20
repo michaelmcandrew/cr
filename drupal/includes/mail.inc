@@ -1,5 +1,5 @@
 <?php
-// $Id: mail.inc,v 1.8.2.6 2009/04/27 11:07:43 goba Exp $
+// $Id: mail.inc,v 1.8.2.8 2010/06/02 12:07:24 goba Exp $
 
 /**
  * Compose and optionally send an e-mail message.
@@ -45,7 +45,7 @@
  *     switch($key) {
  *       case 'notice':
  *         $message['subject'] = t('Notification from !site', $variables, $language->language);
- *         $message['body'] = t("Dear !username\n\nThere is new content available on the site.", $variables, $language->language);
+ *         $message['body'][] = t("Dear !username\n\nThere is new content available on the site.", $variables, $language->language);
  *         break;
  *     }
  *   }
@@ -475,7 +475,7 @@ function _drupal_html_to_text_pad($text, $pad, $prefix = '') {
   if (($p = strrpos($text, "\n")) === FALSE) {
     $p = -1;
   }
-  $n = max(0, 79 - (strlen($text) - $p));
+  $n = max(0, 79 - (strlen($text) - $p) - strlen($prefix));
   // Add prefix and padding, and restore linebreak.
-  return $text . $prefix . str_repeat($pad, $n - strlen($prefix)) ."\n";
+  return $text . $prefix . str_repeat($pad, $n) ."\n";
 }

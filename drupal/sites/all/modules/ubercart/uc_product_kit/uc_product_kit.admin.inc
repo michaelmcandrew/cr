@@ -1,13 +1,16 @@
 <?php
-// $Id: uc_product_kit.admin.inc,v 1.1.2.3 2009/04/22 17:45:12 islandusurper Exp $
+// $Id: uc_product_kit.admin.inc,v 1.1.2.6 2010/07/12 01:29:11 tr Exp $
 
 /**
  * @file
  * Defines administrative pages and form for the product kit module.
  */
 
-
-// Defines the product kit settings form.
+/**
+ * Build the product kit settings form.
+ *
+ * @ingroup forms
+ */
 function uc_product_kit_settings_form() {
   $form = array();
 
@@ -25,4 +28,3 @@ function uc_product_kit_settings_form() {
 
   return system_settings_form($form);
 }
-

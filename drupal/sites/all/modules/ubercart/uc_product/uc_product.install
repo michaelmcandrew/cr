@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_product.install,v 1.12.2.8 2009/02/10 21:58:15 islandusurper Exp $
+// $Id: uc_product.install,v 1.12.2.12 2010/03/19 21:27:18 tr Exp $
 
 /**
  * @file
@@ -7,29 +7,30 @@
  */
 
 /**
- * Ubercart uc_product.module schema
+ * Implementation of hook_schema().
  */
 function uc_product_schema() {
   $schema = array();
 
   $schema['uc_product_classes'] = array(
-    'description' => t('The list of product node types.'),
+    'description' => 'The list of product node types.',
     'fields' => array(
       'pcid' => array(
-        'description' => t('The node type identifier.'),
+        'description' => 'The node type identifier.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
       ),
       'name' => array(
-        'description' => t('The human-readable name.'),
+        'description' => 'The human-readable name.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'description' => array(
+        'description' => 'The description of the node type.',
         'type' => 'text',
       ),
     ),
@@ -37,27 +38,30 @@ function uc_product_schema() {
   );
 
   $schema['uc_product_features'] = array(
+    'description' => 'Stores information of features added to products.',
     'fields' => array(
       'pfid' => array(
-        'description' => t('The product feature id.'),
+        'description' => 'Primary key: the product feature id.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'nid' => array(
-        'description' => t('The identifier of the node that has a feature.'),
+        'description' => 'The {node}.nid of the product that has this feature.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'fid' => array(
+        'description' => 'The type of feature.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
       ),
       'description' => array(
+        'description' => 'The description of the feature.',
         'type' => 'text',
       ),
     ),
@@ -68,93 +72,93 @@ function uc_product_schema() {
   );
 
   $schema['uc_products'] = array(
-    'description' => t('Product information for nodes.'),
+    'description' => 'Product information for nodes.',
     'fields' => array(
       'vid' => array(
-        'description' => t('Revision id of the product node.'),
+        'description' => 'The {node}.vid of the product.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'nid' => array(
-        'description' => t('The product node id.'),
+        'description' => 'The {node}.nid of the product.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'model' => array(
-        'description' => t('SKU or model number.'),
+        'description' => 'SKU or model number.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'list_price' => array(
-        'description' => t('Suggested retail price.'),
+        'description' => 'Suggested retail price.',
         'type' => 'numeric',
-        'precision' => 15,
-        'scale' => 3,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'cost' => array(
-        'description' => t('The amount the store pays to sell the product.'),
+        'description' => 'The amount the store pays to sell the product.',
         'type' => 'numeric',
-        'precision' => 15,
-        'scale' => 3,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'sell_price' => array(
-        'description' => t('The amount the customer pays for the product.'),
+        'description' => 'The amount the customer pays for the product.',
         'type' => 'numeric',
-        'precision' => 15,
-        'scale' => 3,
+        'precision' => 16,
+        'scale' => 5,
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'weight' => array(
-        'description' => t('Physical weight.'),
+        'description' => 'Physical weight.',
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'weight_units' => array(
-        'description' => t('Unit of measure for the weight field.'),
+        'description' => 'Unit of measure for the weight field.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => 'lb',
       ),
       'length' => array(
-        'description' => t('Physical length of the product or its packaging.'),
+        'description' => 'Physical length of the product or its packaging.',
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'width' => array(
-        'description' => t('Physical width of the product or its packaging.'),
+        'description' => 'Physical width of the product or its packaging.',
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'height' => array(
-        'description' => t('Physical height of the product or its packaging.'),
+        'description' => 'Physical height of the product or its packaging.',
         'type' => 'float',
         'not null' => TRUE,
         'default' => 0.0,
       ),
       'length_units' => array(
-        'description' => t('Unit of measure for the length, width, and height.'),
+        'description' => 'Unit of measure for the length, width, and height.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => 'in',
       ),
       'pkg_qty' => array(
-        'description' => t('The number of this product that fit in one package.'),
+        'description' => 'The number of this product that fit in one package.',
         'type' => 'int',
         'size' => 'small',
         'unsigned' => TRUE,
@@ -162,7 +166,7 @@ function uc_product_schema() {
         'default' => 1,
       ),
       'default_qty' => array(
-        'description' => t('The default value for the quantity field in the "Add to Cart" form.'),
+        'description' => 'The default value for the quantity field in the "Add to Cart" form.',
         'type' => 'int',
         'size' => 'small',
         'unsigned' => TRUE,
@@ -170,21 +174,21 @@ function uc_product_schema() {
         'default' => 1,
       ),
       'unique_hash' => array(
-        'description' => t('A multi-site unique identifier for a product.'),
+        'description' => 'A multi-site unique identifier for a product.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => md5(''),
       ),
       'ordering' => array(
-        'description' => t('The sort criteria for products.'),
+        'description' => 'The sort criteria for products.',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
       ),
       'shippable' => array(
-        'description' => t('Boolean flag signifying that the product can be shipped.'),
+        'description' => 'Boolean flag signifying that the product can be shipped.',
         'type' => 'int',
         'size' => 'tiny',
         'unsigned' => TRUE,
@@ -201,12 +205,20 @@ function uc_product_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_product_install() {
   drupal_install_schema('uc_product');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_product_uninstall() {
   drupal_uninstall_schema('uc_product');
+
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_product_shippable_%%'");
 
   variable_del('uc_product_nodes_per_page');
   variable_del('uc_product_add_to_cart_qty');
@@ -402,7 +414,9 @@ function uc_product_update_8() {
   return $ret;
 }
 
-// Update to add in product feature support.
+/**
+ * Update to add in product feature support.
+ */
 function uc_product_update_9() {
   $ret = array();
   switch ($GLOBALS['db_type']) {
@@ -422,7 +436,9 @@ function uc_product_update_9() {
   return $ret;
 }
 
-// Update to add the shippable column to the product table.
+/**
+ * Update to add the shippable column to the product table.
+ */
 function uc_product_update_10() {
   $ret = array();
   switch ($GLOBALS['db_type']) {
@@ -485,11 +501,13 @@ function uc_product_update_6000() {
   return $ret;
 }
 
+/**
+ * Make sure that those who had the faulty 6000 update have the right
+ * precision and scale.
+ */
 function uc_product_update_6001() {
   $ret = array();
 
-  // Make sure that those who had the faulty 6000 update have the right
-  // precision and scale.
   db_change_field($ret, 'uc_products', 'list_price', 'list_price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_change_field($ret, 'uc_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_change_field($ret, 'uc_products', 'sell_price', 'sell_price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
@@ -497,10 +515,12 @@ function uc_product_update_6001() {
   return $ret;
 }
 
+/**
+ * Make the numeric fields signed for Postgres compatibility.
+ */
 function uc_product_update_6002() {
   $ret = array();
 
-  // Make the numeric fields signed for Postgres compatibility.
   db_change_field($ret, 'uc_products', 'list_price', 'list_price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
   db_change_field($ret, 'uc_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
   db_change_field($ret, 'uc_products', 'sell_price', 'sell_price', array('type' => 'numeric', 'precision' => 10, 'scale' => 2, 'not null' => TRUE, 'default' => 0));
@@ -519,7 +539,9 @@ function uc_product_update_6003() {
   return $ret;
 }
 
-// Handle the image widget upgrade.
+/**
+ * Handle the image widget upgrade.
+ */
 function uc_product_update_6004() {
   $ret = array();
 
@@ -536,7 +558,9 @@ function uc_product_update_6004() {
   return $ret;
 }
 
-// Set the uc_image setting to field_image_cache for all existing products.
+/**
+ * Set the uc_image setting to field_image_cache for all existing products.
+ */
 function uc_product_update_6005() {
   $ret = array();
 
@@ -553,7 +577,9 @@ function uc_product_update_6005() {
   return $ret;
 }
 
-// Change to signed floats...
+/**
+ * Change to signed floats.
+ */
 function uc_product_update_6006() {
   $ret = array();
 
@@ -572,7 +598,9 @@ function uc_product_update_6006() {
   return $ret;
 }
 
-// Update old product images to the imagefield widget type.
+/**
+ * Update old product images to the imagefield widget type.
+ */
 function uc_product_update_6007() {
   $ret = array();
 
@@ -592,6 +620,19 @@ function uc_product_update_6008() {
       $ret[] = update_sql("INSERT INTO {imagecache_preset} (presetname) VALUES ('product_full')");
     }
   }
+
+  return $ret;
+}
+
+/**
+ * Change currency fields to numeric(16,5).
+ */
+function uc_product_update_6009() {
+  $ret = array();
+
+  db_change_field($ret, 'uc_products', 'list_price', 'list_price', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_products', 'cost', 'cost', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
+  db_change_field($ret, 'uc_products', 'sell_price', 'sell_price', array('type' => 'numeric', 'precision' => 16, 'scale' => 5, 'not null' => TRUE, 'default' => 0));
 
   return $ret;
 }

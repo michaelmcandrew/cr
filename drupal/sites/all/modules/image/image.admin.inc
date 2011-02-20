@@ -1,13 +1,10 @@
 <?php
-// $Id: image.admin.inc,v 1.2 2008/12/27 06:58:41 drewish Exp $
+// $Id: image.admin.inc,v 1.9.2.2 2010/08/03 17:43:00 sun Exp $
 
 /**
- * Admin settings callback.
+ * Menu callback; Form builder function for image settings.
  */
 function image_admin_settings() {
-  _image_check_settings();
-
-  $form['#submit'][] = 'image_settings_sizes_submit';
   $form['image_updated'] = array(
     '#type' => 'hidden',
     '#value' => variable_get('image_updated', time()),
@@ -15,13 +12,13 @@ function image_admin_settings() {
 
   $form['files'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Image file settings')
+    '#title' => t('Image file settings'),
   );
   $form['files']['image_default_path'] = array(
     '#type' => 'textfield',
     '#title' => t('Default image path'),
     '#default_value' => variable_get('image_default_path', 'images'),
-    '#description' => t('Subdirectory in the directory %dir where pictures will be stored. Do not include trailing slash.', array('%dir' => variable_get('file_directory_path', 'files'))),
+    '#description' => t('Subdirectory in the directory %dir where pictures will be stored. Do not include trailing slash.', array('%dir' => file_directory_path())),
   );
 
   $form['files']['image_max_upload_size'] = array(
@@ -40,7 +37,6 @@ function image_admin_settings() {
     '#theme' => 'image_settings_sizes_form',
     '#description' => '<p>'. t("The <em>Scale image</em> operation resizes images so that they fit with in the given dimensions. If only one dimension is specified the other dimension will be computed based on the image's aspect ratio. The <em>Scale and crop image</em> operation resizes images to be exactly the given dimensions. If only one dimension is specified the image will not be cropped, making this is equivalent to <em>Scale image</em>.") .'</p>'
       .'<p>'. t("Note: 'Original' dimensions will only be used to resize images when they are first uploaded. Existing originals will not be modified.") .'</p>',
-    '#element_validate' => array('image_settings_sizes_validate'),
   );
 
   $link_options = array(
@@ -50,9 +46,11 @@ function image_admin_settings() {
   );
 
   $sizes = image_get_sizes();
+
   // Add some empty rows for user defined sizes.
-  for ($i = count($sizes); $i < 6; $i++) {
-    $sizes['new'. $i] = array(
+  $num_sizes = count($sizes);
+  for ($i = $num_sizes; $i < ($num_sizes + 3); $i++) {
+    $sizes['new' . $i] = array(
       'label' => '',
       'operation' => 'scale',
       'width' => '',
@@ -69,7 +67,7 @@ function image_admin_settings() {
       '#size' => 25,
       '#maxlength' => 32,
     );
-    
+
     // For required sizes, set the value and disable the field.
     if (_image_is_required_size($key)) {
       $form['image_sizes'][$key]['label']['#disabled'] = TRUE;
@@ -100,32 +98,50 @@ function image_admin_settings() {
     );
   }
 
+  // Make changes to the settings before passing them off to
+  // system_settings_form_submit().
+  $form['#submit'][] = 'image_admin_settings_submit';
+
   return system_settings_form($form);
 }
 
 /**
- * Check that the sizes provided have the required amount of information.
+ * Form validation handler for image admin settings form.
  */
-function image_settings_sizes_validate($form, &$form_state) {
-  foreach (element_children($form) as $key) {
+function image_admin_settings_validate($form, &$form_state) {
+  // Check that the sizes provided have the required amount of information.
+  $image_sizes = $form_state['values']['image_sizes'];
+  foreach (element_children($image_sizes) as $key) {
     // If there's a label they must provide at either a height or width.
-    if ($key != IMAGE_ORIGINAL && !empty($form[$key]['label']['#value'])) {
-      if (empty($form[$key]['width']['#value']) && empty($form[$key]['height']['#value'])) {
+    if ($key != IMAGE_ORIGINAL && !empty($image_sizes[$key]['label'])) {
+      if (empty($image_sizes[$key]['width']) && empty($image_sizes[$key]['height'])) {
         form_set_error("image_sizes][$key][width", t('You must specify width, height or both dimensions.'));
       }
     }
   }
+
+  // Try to create directories and warn the user of errors.
+  $image_default_path = $form_state['values']['image_default_path'];
+  $image_path = file_create_path(file_directory_path() . '/' . $image_default_path);
+  $temp_path = $image_path . '/temp';
+
+  if (!file_check_directory($image_path, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS, 'image_default_path')) {
+    form_set_error('image_default_path', t('You have specified an invalid directory.'));
+  }
+  if (!file_check_directory($temp_path, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS, 'image_default_path')) {
+    form_set_error('image_default_path', t('You have specified an invalid directory.'));
+  }
 }
 
 /**
- * Make changes to the settings before passing them off to
- * system_settings_form_submit().
- *
- * Remove deleted sizes, and use the label as indexes for new sizes.
+ * Form submit handler for image admin settings form.
  */
-function image_settings_sizes_submit($form, &$form_state) {
-  $old_sizes = image_get_sizes();
+function image_admin_settings_submit($form, &$form_state) {
+  // Ensure that 'image_default_path' variable contains no trailing slash.
+  $form_state['values']['image_default_path'] = rtrim($form_state['values']['image_default_path'], '/');
 
+  // Remove deleted sizes, and use the label as indexes for new sizes.
+  $old_sizes = image_get_sizes();
   // If the size's operation, or dimensions change we need to rebuild.
   $rebuild = FALSE;
 
@@ -169,7 +185,7 @@ function image_settings_sizes_submit($form, &$form_state) {
   }
 }
 
-function theme_image_settings_sizes_form(&$form) {
+function theme_image_settings_sizes_form($form) {
   $header = array(t('Label'), t('Operation'), t('Width'), t('Height'), t('Link'));
   foreach (element_children($form) as $key) {
     $row = array();

@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_credit.admin.inc,v 1.1.2.4 2009/04/28 21:03:16 islandusurper Exp $
+// $Id: uc_credit.admin.inc,v 1.1.2.6 2010/07/12 01:57:43 tr Exp $
 
 /**
  * @file
@@ -19,7 +19,7 @@ function uc_credit_terminal($order) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'credit-card-terminal',
+    'type' => 'order_total',
     'subject' => array(
       'order' => $order,
     ),
@@ -47,7 +47,7 @@ function uc_credit_terminal_form($form_state, $order, $lock_amount = FALSE) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'credit-card-form',
+    'type' => 'amount',
   );
   $options = array(
     'sign' => FALSE,
@@ -335,4 +335,3 @@ function uc_credit_terminal_form_submit($form, &$form_state) {
 
   $form_state['redirect'] = 'admin/store/orders/'. $form_state['values']['order_id'];
 }
-

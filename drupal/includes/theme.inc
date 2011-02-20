@@ -1,5 +1,5 @@
 <?php
-// $Id: theme.inc,v 1.415.2.22 2009/05/13 19:11:04 goba Exp $
+// $Id: theme.inc,v 1.415.2.28 2010/11/03 19:03:19 goba Exp $
 
 /**
  * @file
@@ -273,18 +273,40 @@ function _theme_process_registry(&$cache, $name, $type, $theme, $path) {
       if (!isset($info['template']) && !isset($info['function'])) {
         $result[$hook]['function'] = ($type == 'module' ? 'theme_' : $name .'_') . $hook;
       }
+
+      // Make sure include files is set so we don't generate notices later.
+      if (!isset($info['include files'])) {
+        $result[$hook]['include files'] = array();
+      }
+
       // If a path is set in the info, use what was set. Otherwise use the
       // default path. This is mostly so system.module can declare theme
       // functions on behalf of core .include files.
       // All files are included to be safe. Conditionally included
       // files can prevent them from getting registered.
       if (isset($info['file']) && !isset($info['path'])) {
-        $result[$hook]['file'] = $path .'/'. $info['file'];
-        include_once($result[$hook]['file']);
+        // First, check to see if the fully qualified file exists.
+        $filename = './'. $path .'/'. $info['file'];
+        if (file_exists($filename)) {
+          require_once $filename;
+          $result[$hook]['include files'][] = $filename;
+        }
+        else {
+          $filename = './'. $info['file'];
+          if (file_exists($filename)) {
+            require_once $filename;
+            $result[$hook]['include files'][] = $filename;
+          }
+        }
       }
       elseif (isset($info['file']) && isset($info['path'])) {
-        include_once($info['path'] .'/'. $info['file']);
+        $filename = './'. $info['path'] .'/'. $info['file'];
+        if (file_exists($filename)) {
+          require_once $filename;
+          $result[$hook]['include files'][] = $filename;
+        }
       }
+
 
       if (isset($info['template']) && !isset($info['path'])) {
         $result[$hook]['template'] = $path .'/'. $info['template'];
@@ -605,13 +627,30 @@ function theme() {
   $theme_path = $hooks[$hook]['theme path'];
 
   // Include a file if the theme function or preprocess function is held elsewhere.
+  if (!empty($info['include files'])) {
+    foreach ($info['include files'] as $include_file) {
+      include_once($include_file);
+    }
+  }
+
+  // Handle compatibility with theme_registry_alters to prevent failures.
   if (!empty($info['file'])) {
+    static $included_files = array();
     $include_file = $info['file'];
-    if (isset($info['path'])) {
+    if (!empty($info['path'])) {
       $include_file = $info['path'] .'/'. $include_file;
     }
-    include_once($include_file);
+
+    if (empty($included_files[$include_file])) {
+      // Statically cache files we've already tried to include so we don't
+      // run unnecessary file_exists calls.
+      $included_files[$include_file] = TRUE;
+      if (file_exists('./'. $include_file)) {
+        include_once('./'. $include_file);
+      }
+    }
   }
+
   if (isset($info['function'])) {
     // The theme call is a function.
     $output = call_user_func_array($info['function'], $args);
@@ -768,13 +807,16 @@ function drupal_find_theme_functions($cache, $prefixes) {
               'function' => $match,
               'arguments' => $info['arguments'],
               'original hook' => $hook,
+              'include files' => $info['include files'],
             );
           }
         }
       }
+
       if (function_exists($prefix .'_'. $hook)) {
         $templates[$hook] = array(
           'function' => $prefix .'_'. $hook,
+          'include files' => $info['include files'],
         );
         // Ensure that the pattern is maintained from base themes to its sub-themes.
         // Each sub-theme will have their functions scanned so the pattern must be
@@ -782,6 +824,8 @@ function drupal_find_theme_functions($cache, $prefixes) {
         if (isset($info['pattern'])) {
           $templates[$hook]['pattern'] = $info['pattern'];
         }
+        // Also ensure that the 'file' property is maintained, because it probably
+        // contains the preprocess.
       }
     }
   }
@@ -845,6 +889,7 @@ function drupal_find_theme_templates($cache, $extension, $path) {
       $templates[$hook] = array(
         'template' => $template,
         'path' => dirname($file->filename),
+        'include files' => $cache[$hook]['include files'],
       );
     }
     // Ensure that the pattern is maintained from base themes to its sub-themes.
@@ -873,6 +918,7 @@ function drupal_find_theme_templates($cache, $extension, $path) {
             'path' => dirname($files[$match]->filename),
             'arguments' => $info['arguments'],
             'original hook' => $hook,
+            'include files' => $info['include files'],
           );
         }
       }
@@ -1198,6 +1244,7 @@ function theme_links($links, $attributes = array('class' => 'links')) {
  *
  * @param $path
  *   Either the path of the image file (relative to base_path()) or a full URL.
+ *   If this is a full URL, $getsize must be set to FALSE or nothing will be returned.
  * @param $alt
  *   The alternative text for text-based browsers.
  * @param $title
@@ -1206,6 +1253,8 @@ function theme_links($links, $attributes = array('class' => 'links')) {
  *   Associative array of attributes to be placed in the img tag.
  * @param $getsize
  *   If set to TRUE, the image's dimension are fetched and added as width/height attributes.
+ *   Defaults to TRUE. Must be set to FALSE if $path is a full URL.
+ * 
  * @return
  *   A string containing the image tag.
  */
@@ -1274,7 +1323,7 @@ function theme_submenu($links) {
  *   - Any HTML attributes, such as "colspan", to apply to the table cell.
  *
  *   Here's an example for $rows:
- *   @verbatim
+ *   @code
  *   $rows = array(
  *     // Simple row
  *     array(
@@ -1285,7 +1334,7 @@ function theme_submenu($links) {
  *       'data' => array('Cell 1', array('data' => 'Cell 2', 'colspan' => 2)), 'class' => 'funky'
  *     )
  *   );
- *   @endverbatim
+ *   @endcode
  *
  * @param $attributes
  *   An array of HTML attributes to apply to the table tag.
@@ -1313,7 +1362,7 @@ function theme_table($header, $rows, $attributes = array(), $caption = NULL) {
   // Format the table header:
   if (count($header)) {
     $ts = tablesort_init($header);
-    // HTML requires that the thead tag has tr tags in it follwed by tbody
+    // HTML requires that the thead tag has tr tags in it followed by tbody
     // tags. Using ternary operator to check and see if we have any rows.
     $output .= (count($rows) ? ' <thead><tr>' : ' <tr>');
     foreach ($header as $cell) {
@@ -1632,7 +1681,7 @@ function theme_username($object) {
     $output .= ' ('. t('not verified') .')';
   }
   else {
-    $output = variable_get('anonymous', t('Anonymous'));
+    $output = check_plain(variable_get('anonymous', t('Anonymous')));
   }
 
   return $output;
@@ -1820,8 +1869,8 @@ function template_preprocess_page(&$variables) {
   $variables['primary_links']     = theme_get_setting('toggle_primary_links') ? menu_primary_links() : array();
   $variables['secondary_links']   = theme_get_setting('toggle_secondary_links') ? menu_secondary_links() : array();
   $variables['search_box']        = (theme_get_setting('toggle_search') ? drupal_get_form('search_theme_form') : '');
-  $variables['site_name']         = (theme_get_setting('toggle_name') ? variable_get('site_name', 'Drupal') : '');
-  $variables['site_slogan']       = (theme_get_setting('toggle_slogan') ? variable_get('site_slogan', '') : '');
+  $variables['site_name']         = (theme_get_setting('toggle_name') ? filter_xss_admin(variable_get('site_name', 'Drupal')) : '');
+  $variables['site_slogan']       = (theme_get_setting('toggle_slogan') ? filter_xss_admin(variable_get('site_slogan', '')) : '');
   $variables['css']               = drupal_add_css();
   $variables['styles']            = drupal_get_css();
   $variables['scripts']           = drupal_get_js();

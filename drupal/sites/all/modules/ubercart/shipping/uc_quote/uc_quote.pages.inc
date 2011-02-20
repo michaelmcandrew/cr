@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_quote.pages.inc,v 1.1.2.5 2009/04/02 21:01:45 islandusurper Exp $
+// $Id: uc_quote.pages.inc,v 1.1.2.9 2010/07/12 01:57:35 tr Exp $
 
 /**
  * @file
@@ -68,11 +68,12 @@ function uc_quote_request_quotes() {
       $return_quotes[$method_id .'---'. $accsrl] = $data;
     }
   }
-  drupal_set_header("Content-Type: text/javascript; charset=utf-8");
-  print drupal_to_js($return_quotes);
-  exit();
+  drupal_json($return_quotes);
 }
 
+/**
+ * Pull the get_quote_from_* triggers and assemble their returned data.
+ */
 function _uc_quote_assemble_quotes($order) {
   global $user;
   $account = user_load($order->uid);
@@ -107,6 +108,14 @@ function _uc_quote_assemble_quotes($order) {
     }
   }
 
+  $context = array(
+    'revision' => 'formatted',
+    'type' => 'line_item',
+    'subject' => array(
+      'order' => $order,
+    ),
+  );
+
   //drupal_set_message('<pre>'. print_r($products, TRUE) .'</pre>');
   $quote_data = array();
   $arguments = array(
@@ -132,9 +141,21 @@ function _uc_quote_assemble_quotes($order) {
     $predicate = array_shift($predicates);
     if ($predicate && ca_evaluate_conditions($predicate, $arguments)) {
       $data = uc_quote_action_get_quote($order, $method, $user);
+
+      foreach ($data as &$quote) {
+        if (isset($quote['rate'])) {
+          $context['subject']['line_item'] = array(
+            'type' => 'shipping',
+            'name' => $quote['option_label'],
+            'amount' => $quote['rate'],
+            'weight' => 1,
+          );
+
+          $quote['format'] = uc_price($quote['rate'], $context);
+        }
+      }
       $quote_data[$method['id']] = $data;
     }
   }
   return $quote_data;
 }
-

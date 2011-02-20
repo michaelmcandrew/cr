@@ -1,5 +1,5 @@
 <?php
-// $Id: sweden_752_1.cif,v 1.4.4.1 2008/11/03 21:33:50 islandusurper Exp $
+// $Id: sweden_752_1.cif,v 1.4.4.4 2010/04/14 05:18:19 tr Exp $
 
 /**
  * First implement hook_install() using the name of the country as the base of
@@ -8,31 +8,36 @@
 function sweden_install() {
   // Make the entry in the country table.
   // VALUES = Country ID, Country Name, 2-digit Code, 3-digit Code, File Version
-  db_query("INSERT INTO {uc_countries} VALUES ('752', 'Sweden', 'SE', 'SWE', 1)");
+  db_query("INSERT INTO {uc_countries} (country_id, country_name, country_iso_code_2, country_iso_code_3, version) VALUES ('752', 'Sweden', 'SE', 'SWE', 1)");
 
   // Make the entries in the zones table.
-  db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES "
-          ."(752, 'BL', 'Blekinge'),"
-          ."(752, 'DA', 'Dalarna'),"
-          ."(752, 'GA', 'Gavleborg'),"
-          ."(752, 'GO', 'Gotland'),"
-          ."(752, 'HA', 'Halland'),"
-          ."(752, 'JA', 'Jamtland'),"
-          ."(752, 'JO', 'Jonkoping'),"
-          ."(752, 'KA', 'Kalmar'),"
-          ."(752, 'KR', 'Kronoberg'),"
-          ."(752, 'NO', 'Norrbotten'),"
-          ."(752, 'OR', 'Orebro'),"
-          ."(752, 'OS', 'Ostergotland'),"
-          ."(752, 'SK', 'Skane'),"
-          ."(752, 'SO', 'Sodermanland'),"
-          ."(752, 'ST', 'Stockholm'),"
-          ."(752, 'UP', 'Uppsala'),"
-          ."(752, 'VL', 'Varmland'),"
-          ."(752, 'VB', 'Vasterbotten'),"
-          ."(752, 'VN', 'Vasternorrland'),"
-          ."(752, 'VM', 'Vastmanland'),"
-          ."(752, 'VG', 'Vastra Gotaland')");
+  $zones = array(
+    array(752, 'BL', 'Blekinge'),
+    array(752, 'DA', 'Dalarna'),
+    array(752, 'GA', 'Gavleborg'),
+    array(752, 'GO', 'Gotland'),
+    array(752, 'HA', 'Halland'),
+    array(752, 'JA', 'Jamtland'),
+    array(752, 'JO', 'Jonkoping'),
+    array(752, 'KA', 'Kalmar'),
+    array(752, 'KR', 'Kronoberg'),
+    array(752, 'NO', 'Norrbotten'),
+    array(752, 'OR', 'Orebro'),
+    array(752, 'OS', 'Ostergotland'),
+    array(752, 'SK', 'Skane'),
+    array(752, 'SO', 'Sodermanland'),
+    array(752, 'ST', 'Stockholm'),
+    array(752, 'UP', 'Uppsala'),
+    array(752, 'VL', 'Varmland'),
+    array(752, 'VB', 'Vasterbotten'),
+    array(752, 'VN', 'Vasternorrland'),
+    array(752, 'VM', 'Vastmanland'),
+    array(752, 'VG', 'Vastra Gotaland'),
+  );
+
+  foreach ($zones as $zone) {
+    db_query("INSERT INTO {uc_zones} (zone_country_id, zone_code, zone_name) VALUES (%d, '%s', '%s')", $zone);
+  }
 
   // Use uc_set_address_format() with the country ID as the first argument and
   // an address format string as the second.  Documentation on address formats
@@ -40,22 +45,4 @@ function sweden_install() {
   // http://www.ubercart.org/ubercart_users_guide/country_settings#address_format_docs
   uc_set_address_format(752,
     "!company\r\n!first_name !last_name\r\n!street1\r\n!street2\r\n!postal_code !city\r\n!country_name_if");
-}
-
-/**
- * If necessary, implement hook_update() with $version being the only argument.
- * Add a new case for each version update, and be sure to always include the
- * latest changes in the install function.
- */
-function sweden_update($version) {
-}
-
-/**
- * If necessary, implement hook_uninstall().  This requires no argument.  The
- * store module automatically removes rows from the country and zones tables
- * related to the country, and it unsets the address format.  This function is
- * only necessary for other things you may have included in your country's
- * installation process.
- */
-function sweden_uninstall() {
 }

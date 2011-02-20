@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_product.admin.inc,v 1.1.2.14 2009/04/02 21:01:46 islandusurper Exp $
+// $Id: uc_product.admin.inc,v 1.1.2.20 2010/07/12 01:30:05 tr Exp $
 
 /**
  * @file
@@ -70,8 +70,9 @@ function uc_product_class_default() {
 /**
  * Display overview of product settings.
  *
- * @see uc_product_settings_form()
- * @see uc_product_field_settings_form()
+ * @see
+ *   uc_product_settings_form()
+ *   uc_product_field_settings_form()
  */
 function uc_product_settings_overview() {
   // Load the form summaries for pages beneath this path.
@@ -99,10 +100,12 @@ function uc_product_settings_form() {
   }
 
   if (empty($options)) {
-    $options[NULL] = 'No image widgets installed.';
+    $options[NULL] = t('No image widgets installed.');
   }
-
-  $options['none'] = "Don't use any image widgets.";
+  else {
+    // If we have widgets installed, add option to not use any of them
+    $options['none'] = "Don't use any image widgets.";
+  }
 
   $form['uc_product_image_widget'] = array(
     '#type' => 'radios',
@@ -162,9 +165,12 @@ function uc_product_settings_form() {
  * Allows store administrators to control what product information is relavent to their store.
  *
  * @ingroup forms
- * @see uc_product_settings_overview()
- * @see theme_uc_product_field_settings_form()
- * @see uc_product_field_settings_form_submit()
+ * @see
+ *   uc_product_settings_overview()
+ *   _uc_product_fields_summarize()
+ *   theme_uc_product_field_settings_form()
+ *   uc_product_field_settings_form_reset()
+ *   uc_product_field_settings_form_submit()
  */
 function uc_product_field_settings_form() {
   $form = array();
@@ -236,6 +242,11 @@ function uc_product_field_settings_form() {
   return $form;
 }
 
+/**
+ * Summary callback for product fields settings.
+ *
+ * @see uc_product_field_settings_form()
+ */
 function _uc_product_fields_summarize($form, $options, $enabled, $weight) {
 
   $fields = array();
@@ -283,6 +294,11 @@ function theme_uc_product_field_settings_form($form) {
   return $output;
 }
 
+/**
+ * Reset field settings to their default values.
+ *
+ * @see uc_product_field_settings_form()
+ */
 function uc_product_field_settings_form_reset($form, &$form_state) {
   variable_del('uc_product_field_enabled');
   variable_del('uc_product_field_weight');
@@ -291,7 +307,9 @@ function uc_product_field_settings_form_reset($form, &$form_state) {
 }
 
 /**
- * Submit handler for uc_product_field_settings_form.
+ * Save the product fields settings.
+ *
+ * @see uc_product_field_settings_form()
  */
 function uc_product_field_settings_form_submit($form, &$form_state) {
   $enabled = array();
@@ -310,6 +328,7 @@ function uc_product_field_settings_form_submit($form, &$form_state) {
  * Display the settings form for all product features.
  *
  * @ingroup forms
+ * @see _uc_product_features_summarize()
  */
 function uc_product_feature_settings_form() {
   $titles = array();
@@ -343,6 +362,9 @@ function uc_product_feature_settings_form() {
   return system_settings_form($form);
 }
 
+/**
+ * Summary callback for uc_product_feature_settings_form().
+ */
 function _uc_product_features_summarize($form, $titles) {
 
   foreach ($titles as $title) {
@@ -359,7 +381,7 @@ function _uc_product_features_summarize($form, $titles) {
 }
 
 /**
- * Displays the project features tab on a product node edit form.
+ * Displays the product features tab on a product node edit form.
  */
 function uc_product_features($node) {
   drupal_set_title(check_plain($node->title));
@@ -381,18 +403,18 @@ function uc_product_features($node) {
           db_query("DELETE FROM {uc_product_features} WHERE pfid = %d", intval(arg(5)));
 
           drupal_set_message(t('The product feature has been deleted.'));
-          drupal_goto('node/'. arg(1) .'/edit/uc-features');
+          drupal_goto('node/'. arg(1) .'/edit/features');
         }
 
         // Show the confirmation form for deleting this feature.
         $question = $node->title;
         $description = t('Are you sure you wish to delete this %feature?', array('%feature' => uc_product_feature_data($feature['fid'], 'title')))
                       .'<div><b>'. t('Description') .':</b><br />'. $feature['description'] .'</div><br />';
-        return drupal_get_form('confirm_form', $question, 'node/'. arg(1) .'/edit/uc-features', $description, t('Delete'), t('Cancel'), 'pf_delete');
+        return drupal_get_form('confirm_form', $question, 'node/'. arg(1) .'/edit/features', $description, t('Delete'), t('Cancel'), 'pf_delete');
       }
       else {
         drupal_set_message(t("That product feature doesn't exist."), 'error');
-        drupal_goto('node/'. arg(1) .'/edit/uc-features');
+        drupal_goto('node/'. arg(1) .'/edit/features');
       }
     }
 
@@ -411,12 +433,12 @@ function uc_product_features($node) {
     }
     else {
       drupal_set_message(t('Error: Attempted to add a non-existent product feature type.'), 'error');
-      drupal_goto('node/'. $node->nid .'/edit/uc-features');
+      drupal_goto('node/'. $node->nid .'/edit/features');
     }
 
     if (empty($output)) {
       drupal_set_message(t('Error: No form data was returned for that operation.'), 'error');
-      drupal_goto('node/'. $node->nid .'/edit/uc-features');
+      drupal_goto('node/'. $node->nid .'/edit/features');
     }
 
     return $output;
@@ -427,8 +449,8 @@ function uc_product_features($node) {
   $result = db_query("SELECT * FROM {uc_product_features} WHERE nid = %d ORDER BY pfid ASC", $node->nid);
   while ($feature = db_fetch_object($result)) {
     $operations = array(
-      l(t('edit'), 'node/'. $node->nid .'/edit/uc-features/'. $feature->fid .'/'. $feature->pfid),
-      l(t('delete'), 'node/'. $node->nid .'/edit/uc-features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
+      l(t('edit'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid),
+      l(t('delete'), 'node/'. $node->nid .'/edit/features/'. $feature->fid .'/'. $feature->pfid .'/delete'),
     );
     $rows[] = array(
       'data' => array(
@@ -456,7 +478,9 @@ function uc_product_features($node) {
  * Add the form for adding a product feature to the features tab.
  *
  * @ingroup forms
- * @see theme_uc_product_feature_add_form()
+ * @see
+ *   theme_uc_product_feature_add_form()
+ *   uc_product_feature_add_form_submit()
  */
 function uc_product_feature_add_form() {
   foreach (module_invoke_all('product_feature') as $feature) {
@@ -480,6 +504,7 @@ function uc_product_feature_add_form() {
 
 /**
  * @ingroup themeable
+ * @see uc_product_feature_add_form()
  */
 function theme_uc_product_feature_add_form($form) {
   $output = '<table class="add-feature"><tr><td>'. drupal_render($form) .'</td></tr></table>';
@@ -487,24 +512,24 @@ function theme_uc_product_feature_add_form($form) {
 }
 
 /**
- * Submit handler for uc_product_feature_add_form_submit.
+ * @see uc_product_feature_add_form().
  */
 function uc_product_feature_add_form_submit($form, &$form_state) {
-  $form_state['redirect'] = 'node/'. arg(1) .'/edit/uc-features/'. $form_state['values']['feature'] .'/add';
+  $form_state['redirect'] = 'node/'. arg(1) .'/edit/features/'. $form_state['values']['feature'] .'/add';
 }
 
 /**
  * Set up imagefield and imagecache for products.
  *
- * @param $checks A bitmap describing the state of the image modules. Four
- *   checks are made to fill this bitmap: an imagefield exists, an imagefield
- *   is attached to product, the imagecache presets exist, and each preset has
- *   at least one action.
+ * @param $checks
+ *   A bitmap describing the state of the image modules. Four checks are made
+ *   to fill this bitmap: an imagefield exists, an imagefield is attached to
+ *   product, the imagecache presets exist, and each preset has at least one
+ *   action.
  * @see uc_product_store_status()
  */
 function uc_product_image_defaults() {
   uc_product_add_default_image_field();
-  uc_product_add_imagecache_presets();
 
   drupal_set_message(t('Default image support configured for Ubercart products using CCK and ImageCache.'));
 
@@ -512,10 +537,12 @@ function uc_product_image_defaults() {
 }
 
 /**
- *  Form builder for product classes.
+ * Form builder for product classes.
  *
  * @ingroup forms
- * @see uc_product_class_form_submit()
+ * @see
+ *   uc_product_class_form_validate()
+ *   uc_product_class_form_submit()
  */
 function uc_product_class_form($form_state, $class = NULL) {
   if (!is_null($class)) {
@@ -558,6 +585,11 @@ function uc_product_class_form($form_state, $class = NULL) {
   return $form;
 }
 
+/**
+ * Ensure the new product class is unique.
+ *
+ * @see uc_product_class_form()
+ */
 function uc_product_class_form_validate($form, &$form_state) {
   if ($form['pcid']['#type'] == 'textfield') {
     $type = node_get_types('type', $form_state['values']['pcid']);
@@ -573,7 +605,7 @@ function uc_product_class_form_validate($form, &$form_state) {
 }
 
 /**
- * Submit handler for uc_product_class_form.
+ * @see uc_product_class_form()
  */
 function uc_product_class_form_submit($form, &$form_state) {
   $is_new = $form['pcid']['#type'] == 'textfield';
@@ -607,7 +639,7 @@ function uc_product_class_form_submit($form, &$form_state) {
   }
   menu_rebuild();
 
-  $form_state['redirect'] = 'admin/store/products/classes';
+  drupal_set_message(t('Product class saved.'));
 }
 
 /**
@@ -616,34 +648,42 @@ function uc_product_class_form_submit($form, &$form_state) {
  * @see uc_product_class_delete_confirm_submit()
  */
 function uc_product_class_delete_confirm($form_state, $class) {
-  $result = db_query("SELECT COUNT(*) AS number FROM {node} WHERE type = '%s'", $class->pcid);
-  $products = db_fetch_object($result);
-  $form['pcid'] = array('#type' => 'value', '#value' => $class->pcid);
-  $form['#redirect'] = 'admin/store/products/classes';
-  $output = confirm_form($form, t('Be very sure you want to delete the %type product class. It will become a standard node type.', array('%type' => $class->pcid)), 'admin/store/products/classes',
-    format_plural($products->number, 'There is @count node of this type.', 'There are @count nodes of this type.'),
-    t('Continue'), t('Cancel'));
+  $form = array();
 
-  return $output;
+  $form['pcid'] = array(
+    '#type' => 'value',
+    '#value' => $class->pcid,
+  );
+
+  $question = t('Are you sure you want to delete the %type product class?', array('%type' => $class->pcid));
+  $description = t('The node type associated with this product class will revert to a standard node type.');
+
+  // Find out how many nodes of this class exist and add to the description.
+  $count = db_result(db_query("SELECT COUNT(*) FROM {node} WHERE type = '%s'", $class->pcid));
+
+  if ($count > 0) {
+    $description .= '<br />'. format_plural($count, 'There is @count node of this type.', 'There are @count nodes of this type.');
+  }
+
+  return confirm_form($form, $question, 'admin/store/products/classes', $description, t('Delete'), t('Cancel'));
 }
 
 /**
- * Submit handler for uc_product_class_delete_confirm.
+ * @see uc_product_class_delete_confirm()
  */
 function uc_product_class_delete_confirm_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-    $type = node_get_types('type', $form_state['values']['pcid']);
-    $type->module = 'node';
-    $type->custom = 1;
-    node_type_save($type);
+  $type = node_get_types('type', $form_state['values']['pcid']);
+  $type->module = 'node';
+  $type->custom = 1;
+  node_type_save($type);
 
-    db_query("DELETE FROM {uc_product_classes} WHERE pcid = '%s'", $form_state['values']['pcid']);
-    module_invoke_all('product_class', $form_state['values']['pcid'], 'delete');
-    uc_product_node_info(TRUE);
-    node_types_rebuild();
-    menu_rebuild();
+  db_query("DELETE FROM {uc_product_classes} WHERE pcid = '%s'", $form_state['values']['pcid']);
+  module_invoke_all('product_class', $form_state['values']['pcid'], 'delete');
+  uc_product_node_info(TRUE);
+  node_types_rebuild();
+  menu_rebuild();
 
-    drupal_set_message(t('Product class %type deleted.', array('%type' => $form_state['values']['pcid'])));
-  }
+  drupal_set_message(t('Product class %type deleted.', array('%type' => $form_state['values']['pcid'])));
+
+  $form_state['redirect'] = 'admin/store/products/classes';
 }
-

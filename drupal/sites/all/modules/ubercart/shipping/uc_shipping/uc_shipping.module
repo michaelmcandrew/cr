@@ -1,12 +1,14 @@
 <?php
-// $Id: uc_shipping.module,v 1.6.2.10 2009/04/28 21:03:15 islandusurper Exp $
+// $Id: uc_shipping.module,v 1.6.2.20 2010/07/30 15:06:21 islandusurper Exp $
 
 /**
  * @file
- * Organizes ordered products into packages and sets them up for shipment. Shipping
- * method modules may add functionality to generate shipping labels and tracking
- * numbers.
+ * Organizes ordered products into packages and sets them up for shipment.
+ * Shipping method modules may add functionality to generate shipping labels
+ * and tracking numbers.
  */
+
+require_once('uc_shipping.ca.inc');
 
 /******************************************************************************
  * Drupal hooks                                                               *
@@ -104,6 +106,25 @@ function uc_shipping_menu() {
     'page arguments' => array('uc_shipping_shipment_edit', 3, 5),
     'access callback' => 'uc_shipping_order_access',
     'access arguments' => array(3),
+    'weight' => -1,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'uc_shipping.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/print'] = array(
+    'title' => 'Print',
+    'page callback' => 'theme',
+    'page arguments' => array('uc_shipping_shipment_print', 3, 5),
+    'access callback' => 'uc_shipping_order_access',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'uc_shipping.admin.inc',
+  );
+  $items['admin/store/orders/%uc_order/shipments/%uc_shipping_shipment/packing_slip'] = array(
+    'title' => 'Packing slip',
+    'page callback' => 'theme',
+    'page arguments' => array('uc_shipping_shipment_print', 3, 5, FALSE),
+    'access callback' => 'uc_shipping_order_access',
+    'access arguments' => array(3),
     'type' => MENU_LOCAL_TASK,
     'file' => 'uc_shipping.admin.inc',
   );
@@ -129,10 +150,16 @@ function uc_shipping_menu() {
   return $items;
 }
 
+/**
+ * Title callback for admin/store/orders/%uc_order/shipments/%uc_shipping_shipment.
+ */
 function uc_shipping_shipment_page_title($shipment) {
   return t('Shipment !id', array('!id' => $shipment->sid));
 }
 
+/**
+ * Ensure access to the Shipments tab.
+ */
 function uc_shipping_order_access($order) {
   return user_access('fulfill orders') && uc_order_is_shippable($order);
 }
@@ -144,6 +171,9 @@ function uc_shipping_perm() {
   return array('fulfill orders');
 }
 
+/**
+ * Implementation of hook_theme().
+ */
 function uc_shipping_theme() {
   return array(
     'uc_shipping_new_package_fieldset' => array(
@@ -164,13 +194,52 @@ function uc_shipping_theme() {
     'uc_shipping_address' => array(
       'arguments' => array('address' => NULL),
     ),
+    'uc_shipping_shipment_print' => array(
+      'arguments' => array('order' => NULL, 'shipment' => NULL),
+    ),
+    'uc_packing_slip' => array(
+      'arguments' => array('order' => NULL, 'shipment' => NULL),
+      'template' => 'uc-packing-slip',
+    ),
   );
 }
 
+function template_preprocess_uc_packing_slip(&$variables) {
+  $tokens = uc_store_token_values('global');
+  $variables['site_logo'] = $tokens['site-logo'];
+  $variables['store_name'] = $tokens['store-name'];
+  $variables['store_address'] = $tokens['store-address'];
+  $variables['store_phone'] = $tokens['store-phone'];
+
+  $order = $variables['order'];
+  $variables['order_link'] = l($order->order_id, url('user/'. $order->uid .'/order/'. $order->order_id, array('absolute' => TRUE)));
+  $variables['order_email'] = check_plain($order->primary_email);
+  $variables['billing_address'] = uc_order_address($order, 'billing');
+  $variables['billing_phone'] = check_plain($order->billing_phone);
+  $variables['shipping_address'] = uc_order_address($order, 'delivery');
+  $variables['shipping_phone'] = check_plain($order->delivery_phone);
+
+  if (module_exists('uc_payment')) {
+    $tokens = uc_payment_token_values('order', $order);
+    $variables['payment_method'] = $tokens['order-payment-method'];
+  }
+  else {
+    $variables['payment_method'] = '';
+  }
+
+  $shipment = $variables['shipment'];
+  $variables['carrier'] = check_plain($shipment->carrier);
+  $variables['tracking_number'] = check_plain($shipment->tracking_number);
+  $variables['packages'] = $shipment->packages;
+}
+
 /******************************************************************************
- * Übercart hooks                                                             *
+ * Ubercart hooks                                                             *
  ******************************************************************************/
 
+/**
+ * Implementation of hook_order_pane().
+ */
 function uc_shipping_order_pane() {
   $panes[] = array(
     'id' => 'packages',
@@ -185,6 +254,9 @@ function uc_shipping_order_pane() {
   return $panes;
 }
 
+/**
+ * Implemenation of hook_order_actions().
+ */
 function uc_shipping_order_actions($order) {
   $actions = array();
   $module_path = base_path() . drupal_get_path('module', 'uc_shipping');
@@ -237,17 +309,14 @@ function uc_shipping_package_view($package) {
     $rows[] = array(t('Dimensions:'), t('!l x !w x !h', array('!l' => uc_length_format($package->length), '!w' => uc_length_format($package->width), '!h' => uc_length_format($package->height))));
   }
   $context = array(
-    'location' => 'shipping-package-view',
-    'subject' => array(
-      'package' => $package,
-      'field' => 'value',
-    ),
+    'revision' => 'themed',
+    'type' => 'amount',
   );
   $rows[] = array(t('Insured value:'), uc_price($package->value, $context));
   if ($package->tracking_number) {
     $rows[] = array(t('Tracking number:'), check_plain($package->tracking_number));
   }
-  if ($shipment && $package->label_image && file_exists($package->label_image)) {
+  if ($shipment && $package->label_image && file_exists(file_create_path($package->label_image))) {
     $rows[] = array(t('Label:'), l(t('Click to view.'), 'admin/store/orders/'. $package->order_id .'/shipments/labels/'. $shipment->shipping_method .'/'. $package->label_image));
   }
   else {
@@ -333,7 +402,7 @@ function uc_shipping_package_load($package_id) {
       $weight = 0;
       $units = variable_get('uc_weight_unit', 'lb');
       $addresses = array();
-      $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.weight_units, op.nid, op.title, op.model, op.price FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = %d", $package_id);
+      $result = db_query("SELECT op.order_product_id, pp.qty, pp.qty * op.weight AS weight, p.weight_units, op.nid, op.title, op.model, op.price, op.data FROM {uc_packaged_products} AS pp LEFT JOIN {uc_order_products} AS op ON op.order_product_id = pp.order_product_id LEFT JOIN {uc_products} AS p ON op.nid = p.nid WHERE pp.package_id = %d ORDER BY op.order_product_id", $package_id);
       while ($product = db_fetch_object($result)) {
         $address = uc_quote_get_default_shipping_address($product->nid);
         // TODO: Lodge complaint that array_unique() compares as strings.
@@ -343,6 +412,7 @@ function uc_shipping_package_load($package_id) {
         $description .= ', '. $product->qty .' x '. $product->model;
         // Normalize all weights to default units.
         $weight += $product->weight * uc_weight_conversion($product->weight_units, $units);
+        $product->data = unserialize($product->data);
         $products[$product->order_product_id] = $product;
       }
       $package->addresses = $addresses;
@@ -430,7 +500,7 @@ function uc_shipping_package_delete($package_id) {
 }
 
 /**
- * Load a shipment and it's packages.
+ * Load a shipment and its packages.
  */
 function uc_shipping_shipment_load($shipment_id) {
   $shipment = db_fetch_object(db_query("SELECT * FROM {uc_shipments} WHERE sid = %d", $shipment_id));
@@ -492,6 +562,8 @@ function uc_shipping_shipment_save($shipment) {
   );
 
   module_invoke_all('shipment', 'save', $shipment);
+  $order = uc_order_load($shipment->order_id);
+  ca_pull_trigger('uc_shipment_save', $order, $shipment);
 }
 
 /**
@@ -509,6 +581,11 @@ function uc_shipping_shipment_delete($shipment_id) {
   module_invoke_all('shipment', 'delete', $shipment);
 }
 
+/**
+ * Shipping order pane callback.
+ *
+ * @see uc_shipping_order_pane()
+ */
 function uc_shipping_order_pane_packages($op, $arg1) {
   switch ($op) {
     case 'view':
@@ -577,6 +654,11 @@ function uc_shipping_select_address($addresses, $onchange = '', $title = NULL, $
   return $select;
 }
 
+/**
+ * Helper function for addresses in forms.
+ *
+ * @ingroup forms
+ */
 function uc_shipping_address_form($form_state, $addresses, $order) {
   drupal_add_js(drupal_get_path('module', 'uc_shipping') .'/uc_shipping.js');
   $form = array();
@@ -590,7 +672,7 @@ function uc_shipping_address_form($form_state, $addresses, $order) {
   $address = reset($addresses);
   $form['origin']['pickup_address_select'] = uc_shipping_select_address($addresses, 'apply_address(\'pickup\', this.value);', t('Saved Addresses'), TRUE);
   $form['origin']['pickup_address_select']['#weight'] = -2;
-  $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', NULL), FALSE);
+  $form['origin']['pickup_email'] = uc_textfield(uc_get_field_name('email'), variable_get('uc_store_email', NULL), FALSE, NULL, 255);
   $form['origin']['pickup_email']['#weight'] = -1;
   $form['origin']['pickup_first_name'] = uc_textfield(uc_get_field_name('first_name'), $address->first_name, FALSE);
   $form['origin']['pickup_last_name'] = uc_textfield(uc_get_field_name('last_name'), $address->last_name, FALSE);
@@ -611,9 +693,9 @@ function uc_shipping_address_form($form_state, $addresses, $order) {
 
   $order_form = uc_order_pane_ship_to('edit-form', $order);
   $form['destination'] = $order_form['ship_to'];
-  $form['destination']['delivery_email'] = uc_textfield(uc_get_field_name('email'), $order->primary_email, FALSE);
+  $form['destination']['delivery_email'] = uc_textfield(uc_get_field_name('email'), $order->primary_email, FALSE, NULL, 255);
   $form['destination']['delivery_email']['#weight'] = -1;
-  $form['destination']['#title'] = t('Destination Address');
+  $form['destination']['#title'] = t('Destination address');
   $form['destination']['#collapsible'] = TRUE;
   $form['destination']['#weight'] = -1;
   $form['destination']['#theme'] = 'uc_shipping_address';

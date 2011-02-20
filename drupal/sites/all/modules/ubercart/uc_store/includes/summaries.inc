@@ -1,12 +1,11 @@
 <?php
-// $Id: summaries.inc,v 1.1.2.8 2009/01/19 20:31:28 islandusurper Exp $
+// $Id: summaries.inc,v 1.1.2.12 2010/07/12 22:51:30 tr Exp $
 
 /**
  * @file
  * Provides summaries of forms and fieldsets to give "at-a-glance" settings
  * information.
  */
-
 
 /**
  * Summarizes the elements in a form array, recursively building summaries of
@@ -95,6 +94,20 @@ function summarize_element($form, $title = FALSE) {
         return $form['#title'] .': '. check_plain($form['#default_value']);
 
       case 'select':
+        if (!empty($form['#multiple']) and is_array($form['#default_value'])) {
+          $options = array();
+          foreach ($form['#default_value'] as $value) {
+            if (isset($form['#options'][$value])) {
+              $options[] = $form['#options'][$value];
+            }
+          }
+          // Return an item list of the selected options.
+          return array(array(
+            'data' => $form['#title'].':',
+            'children' => $options,
+          ));
+        }
+        // Else, fall through.
       case 'radios':
         return $form['#title'] .': '. $form['#options'][$form['#default_value']];
 
@@ -116,13 +129,15 @@ function summarize_element($form, $title = FALSE) {
   }
 }
 
-// Returns an empty summary string.
+/**
+ * Return an empty summary string.
+ */
 function summarize_null($form) {
   return array();
 }
 
 /**
- * Returns the correct summary string for a checkbox element based on its
+ * Return the correct summary string for a checkbox element based on its
  *   current value.
  *
  * @param $true
@@ -142,7 +157,7 @@ function summarize_checkbox($form, $true, $false) {
 }
 
 /**
- * Summarizes the form pages that are children of the specified path.
+ * Summarize the form pages that are children of the specified path.
  *
  * @param $path
  *   The menu path to start from when checking for children forms.
@@ -171,6 +186,10 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
 
   while ($row = db_fetch_array($result)) {
     $item = menu_get_item($row['path']);
+    // Only allow items the user can access.
+    if ($item['access'] === FALSE) {
+      continue;
+    }
 
     if ($item['page_callback'] == 'drupal_get_form') {
       if ($item['type'] == MENU_DEFAULT_LOCAL_TASK) {
@@ -208,7 +227,7 @@ function summarize_child_form_pages($path, $trim = FALSE, $only_parent = FALSE) 
 }
 
 /**
- * Themes a summaries array into a handy div for use with some JS enhancement.
+ * Theme a summaries array into a handy div for use with some JS enhancement.
  *
  * @param $summaries
  *   An array of summary arrays each containing the following keys:
@@ -254,4 +273,3 @@ function theme_summary_overview($summaries, $link = TRUE) {
 
   return $output;
 }
-

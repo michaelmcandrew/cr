@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_credit.pages.inc,v 1.1.2.2 2008/11/07 21:13:23 islandusurper Exp $
+// $Id: uc_credit.pages.inc,v 1.1.2.3 2010/07/12 01:57:43 tr Exp $
 
 /**
  * @file
@@ -10,7 +10,7 @@
 // Prints the contents of the CVV information popup window.
 function uc_credit_cvv_info() {
   $output = '<b>'. t('What is the CVV?') .'</b><p>'. t('CVV stands for Card Verification Value. This number is used as a security feature to protect you from credit card fraud.  Finding the number on your card is a very simple process.  Just follow the directions below.') .'</p>';
-  $cc_types = array('visa', 'mastercard', 'maestro', 'discover');
+  $cc_types = array('visa', 'mastercard', 'discover');
   foreach ($cc_types as $type) {
     if (variable_get('uc_credit_'. $type, TRUE)) {
       $valid_types[] = ucfirst($type);
@@ -36,4 +36,3 @@ function uc_credit_cvv_info() {
   print $output;
   exit();
 }
-

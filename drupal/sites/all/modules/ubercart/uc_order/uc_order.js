@@ -1,4 +1,9 @@
-// $Id: uc_order.js,v 1.9.2.5 2009/02/24 15:35:53 islandusurper Exp $
+// $Id: uc_order.js,v 1.9.2.9 2009/09/21 14:34:46 islandusurper Exp $
+
+/**
+ * @file
+ * Handles asynchronous requests for order editing forms.
+ */
 
 var customer_select = '';
 var add_product_browser = '';
@@ -12,7 +17,7 @@ Drupal.behaviors.ucOrderClick = function(context) {
     function() {
       $(this).dblclick(
         function() {
-          var url = Drupal.settings.basePath + 'admin/store/orders/' + this.id.substring(6);
+          var url = Drupal.settings.ucURL.adminOrders + this.id.substring(6);
           window.location = url;
         }
       );
@@ -44,7 +49,7 @@ $(document).ready(
       function() {
         $(this).dblclick(
           function() {
-            var url = Drupal.settings.basePath + '?q=admin/store/orders/' + this.id.substring(6);
+            var url = Drupal.settings.ucURL.adminOrders + this.id.substring(6);
             window.location = url;
           }
         );
@@ -90,7 +95,7 @@ function load_address_select(uid, div, address_type) {
     'func' : "apply_address('" + address_type + "', this.value);"
   };
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/address_book', options,
+  $.post(Drupal.settings.ucURL.adminOrders + 'address_book', options,
          function (contents) {
            $(div).empty().addClass('address-select-box').append(contents);
          }
@@ -138,7 +143,7 @@ function load_customer_search() {
     return close_customer_select();
   }
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/customer', {},
+  $.post(Drupal.settings.ucURL.adminOrders + 'customer', {},
          function (contents) {
            $('#customer-select').empty().addClass('customer-select-box').append(contents);
            $('#customer-select #edit-first-name').val($('#edit-billing-first-name').val());
@@ -150,6 +155,9 @@ function load_customer_search() {
   return false;
 }
 
+/**
+ * Display the results of the customer search.
+ */
 function load_customer_search_results() {
   var first_name = $('#customer-select #edit-first-name').val();
   var last_name = $('#customer-select #edit-last-name').val();
@@ -165,7 +173,7 @@ function load_customer_search_results() {
     email = '0';
   }
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/customer/search/' + first_name + '/' + last_name + '/' + email,
+  $.post(Drupal.settings.ucURL.adminOrders + 'customer/search/' + encodeURIComponent(first_name) + '/' + encodeURIComponent(last_name) + '/' + encodeURIComponent(email),
          { },
          function (contents) {
            $('#customer-select').empty().append(contents);
@@ -174,6 +182,9 @@ function load_customer_search_results() {
   return false;
 }
 
+/**
+ * Set customer values from search selection.
+ */
 function select_customer_search() {
   var data = $('#edit-cust-select').val();
   $('#edit-uid').val(data.substr(0, data.indexOf(':')));
@@ -188,12 +199,15 @@ function select_customer_search() {
   return close_customer_select();
 }
 
+/**
+ * Display the new customer form.
+ */
 function load_new_customer_form() {
   if (customer_select == 'new') {
     return close_customer_select();
   }
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/customer/new', {},
+  $.post(Drupal.settings.ucURL.adminOrders + 'customer/new', {},
          function (contents) {
            $('#customer-select').empty().addClass('customer-select-box').append(contents);
            customer_select = 'new';
@@ -202,12 +216,15 @@ function load_new_customer_form() {
   return false;
 }
 
+/**
+ * Validate the customer's email address.
+ */
 function check_new_customer_address() {
   var options = {
     'email' : $('#customer-select #edit-email').val(),
     'sendmail' : $('#customer-select #edit-sendmail').attr('checked')
   };
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/customer/new/check/' + options['email'], options,
+  $.post(Drupal.settings.ucURL.adminOrders + 'customer/new/check/' + encodeURIComponent(options['email']), options,
          function (contents) {
            $('#customer-select').empty().append(contents);
          }
@@ -215,6 +232,9 @@ function check_new_customer_address() {
   return false;
 }
 
+/**
+ * Load existing customer as new order's customer.
+ */
 function select_existing_customer(uid, email) {
   $('#edit-uid').val(uid);
   $('#edit-uid-text').val(uid);
@@ -228,6 +248,9 @@ function select_existing_customer(uid, email) {
   return close_customer_select();
 }
 
+/**
+ * Hide the customer selection form.
+ */
 function close_customer_select() {
   $('#customer-select').empty().removeClass('customer-select-box');
   customer_select = '';
@@ -244,7 +267,7 @@ function uc_order_load_product_edit_div(order_id) {
 
       show_product_throbber();
 
-      $.post(Drupal.settings.basePath + '?q=admin/store/orders/' + order_id + '/products',
+      $.post(Drupal.settings.ucURL.adminOrders + order_id + '/products',
              { action: 'view' },
              function(contents) {
                if (contents != '') {
@@ -257,6 +280,9 @@ function uc_order_load_product_edit_div(order_id) {
   );
 }
 
+/**
+ * Load the product selection form.
+ */
 function load_product_select(order_id, search) {
   if (search == true) {
     options = {'search' : $('#edit-product-search').val()};
@@ -267,7 +293,7 @@ function load_product_select(order_id, search) {
 
   show_product_throbber();
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/' + order_id + '/product_select', options,
+  $.post(Drupal.settings.ucURL.adminOrders + order_id + '/product_select', options,
          function (contents) {
            $('#products-selector').empty().addClass('product-select-box2').append(contents);
            hide_product_throbber();
@@ -277,23 +303,32 @@ function load_product_select(order_id, search) {
   return false;
 }
 
+/**
+ * Deprecated?
+ */
 function select_product() {
   add_product_form();
   return false;
 }
 
+/**
+ * Hide product selection form.
+ */
 function close_product_select() {
   $('#products-selector').empty().removeClass('product-select-box2');
   return false;
 }
 
+/**
+ * Load the quantity and other extra product fields.
+ */
 function add_product_form() {
   add_product_browser = $('#products-selector').html();
 
   show_product_throbber();
 
   if (parseInt($('#edit-unid').val()) > 0) {
-    $.post(Drupal.settings.basePath + '?q=admin/store/orders/' + $('#edit-order-id').val() + '/add_product/' + $('#edit-unid').val(), { },
+    $.post(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/add_product/' + $('#edit-unid').val(), { },
            function(contents) {
              $('#products-selector').empty().append(contents);
              hide_product_throbber();
@@ -302,13 +337,16 @@ function add_product_form() {
   }
 }
 
+/**
+ * Add the selected product to the order.
+ */
 function add_product_to_order(order_id, node_id) {
   var post_vars = fetch_product_data();
   post_vars['action'] = 'add';
   post_vars['nid'] = node_id;
   post_vars['qty'] = $('#edit-add-qty').val();
 
-  $('#uc-order-add-product-form :input').not(':radio:not(:checked)').each(
+  $('#uc-order-add-product-form :input').not(':radio:not(:checked), :checkbox:not(:checked)').each(
     function() {
       post_vars[$(this).attr('name')] = $(this).val();
     }
@@ -316,7 +354,7 @@ function add_product_to_order(order_id, node_id) {
 
   show_product_throbber();
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/' + order_id + '/products', post_vars,
+  $.post(Drupal.settings.ucURL.adminOrders + order_id + '/products', post_vars,
          function(contents) {
            if (contents != '') {
              $('#products-container').empty().append(contents);
@@ -330,6 +368,9 @@ function add_product_to_order(order_id, node_id) {
   return false;
 }
 
+/**
+ * Gather all of the products' data fields into one array.
+ */
 function fetch_product_data() {
   var pdata = { };
 
@@ -347,13 +388,16 @@ function fetch_product_data() {
   return pdata;
 }
 
+/**
+ * Button to create a new row of empty data fields.
+ */
 function add_blank_line_button(order_id) {
   var post_vars = fetch_product_data();
   post_vars['action'] = 'add_blank';
 
   show_product_throbber();
 
-  $.post(Drupal.settings.basePath + '?q=admin/store/orders/' + order_id + '/products',
+  $.post(Drupal.settings.ucURL.adminOrders + order_id + '/products',
          post_vars,
          function(contents) {
            if (contents != '') {
@@ -364,6 +408,9 @@ function add_blank_line_button(order_id) {
   );
 }
 
+/**
+ * Button to remove product from the order.
+ */
 function remove_product_button(message, opid) {
   if (confirm(message)) {
     var post_vars = fetch_product_data();
@@ -372,7 +419,7 @@ function remove_product_button(message, opid) {
 
     show_product_throbber();
 
-    $.post(Drupal.settings.basePath + '?q=admin/store/orders/' + $('#edit-order-id').val() + '/products',
+    $.post(Drupal.settings.ucURL.adminOrders + $('#edit-order-id').val() + '/products',
            post_vars,
            function(contents) {
              if (contents != '') {
@@ -384,6 +431,9 @@ function remove_product_button(message, opid) {
   }
 }
 
+/**
+ * Prevent mistakes by confirming deletion.
+ */
 function confirm_line_item_delete(message, img_id) {
   if (confirm(message)) {
     var li_id = img_id.substring(3);
@@ -392,13 +442,17 @@ function confirm_line_item_delete(message, img_id) {
   }
 }
 
-// Disable order submit button while parts of the page are still loading.
+/**
+ * Disable order submit button while parts of the page are still loading.
+ */
 function add_order_save_hold() {
   order_save_holds++;
   $('#uc-order-edit-form input.save-button').attr('disabled', 'disabled');
 }
 
-// Remove a hold and enable the save buttons when all holds are gone!
+/**
+ * Remove a hold and enable the save buttons when all holds are gone!
+ */
 function remove_order_save_hold() {
   order_save_holds--;
 
@@ -407,15 +461,23 @@ function remove_order_save_hold() {
   }
 }
 
-// Removes the disable attribute on any input item with the save-button class.
+/**
+ * Remove the disable attribute on any input item with the save-button class.
+ */
 function release_held_buttons() {
   $('#uc-order-edit-form input.save-button').removeAttr('disabled');
 }
 
+/**
+ * User feedback that something is happening.
+ */
 function show_product_throbber() {
   $('#product-div-throbber').attr('style', 'background-image: url(' + Drupal.settings.basePath + 'misc/throbber.gif); background-repeat: no-repeat; background-position: 100% -20px;').html('&nbsp;&nbsp;&nbsp;&nbsp;');
 }
 
+/**
+ * Done loading forms.
+ */
 function hide_product_throbber() {
   $('#product-div-throbber').removeAttr('style').empty();
 }

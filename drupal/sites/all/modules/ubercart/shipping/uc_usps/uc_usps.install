@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_usps.install,v 1.5.2.6 2009/01/19 20:31:24 islandusurper Exp $
+// $Id: uc_usps.install,v 1.5.2.8 2010/03/19 21:27:17 tr Exp $
 
 /**
  * @file
@@ -25,24 +25,31 @@ function uc_usps_requirements($phase) {
   return $requirements;
 }
 
+/**
+ * Implementation of hook_schema().
+ */
 function uc_usps_schema() {
   $schema = array();
 
   $schema['uc_usps_products'] = array(
+    'description' => 'Stores product information for USPS shipping quotes.',
     'fields' => array(
       'vid' => array(
+        'description' => 'The {uc_products}.vid.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'nid' => array(
+        'description' => 'The {uc_products}.nid.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'container' => array(
+        'description' => 'The package type in which the product will be shipped.',
         'type' => 'varchar',
         'length' => '255',
         'not null' => TRUE,
@@ -55,10 +62,16 @@ function uc_usps_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_usps_install() {
   drupal_install_schema('uc_usps');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_usps_uninstall() {
   drupal_uninstall_schema('uc_usps');
   variable_del('uc_usps_user_id');

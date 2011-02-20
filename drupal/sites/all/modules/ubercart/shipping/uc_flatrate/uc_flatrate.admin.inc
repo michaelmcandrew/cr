@@ -1,10 +1,9 @@
 <?php
-// $Id: uc_flatrate.admin.inc,v 1.1.2.11 2009/04/28 21:03:17 islandusurper Exp $
+// $Id: uc_flatrate.admin.inc,v 1.1.2.16 2010/07/12 01:57:35 tr Exp $
 
 /**
  * @file
  * Flat rate shipping method administration menu items.
- *
  */
 
 /**
@@ -14,7 +13,8 @@ function uc_flatrate_admin_methods() {
   $output = '';
 
   $context = array(
-    'location' => 'shipping-flatrate-method-admin',
+    'revision' => 'themed',
+    'type' => 'amount',
   );
 
   $rows = array();
@@ -22,8 +22,6 @@ function uc_flatrate_admin_methods() {
   $weight = variable_get('uc_quote_method_weight', array());
   $result = db_query("SELECT mid, title, label, base_rate, product_rate FROM {uc_flatrate_methods}");
   while ($method = db_fetch_object($result)) {
-    $context['subject']['flatrate_method'] = $method;
-
     $row = array();
     $row[] = check_plain($method->title);
     $row[] = check_plain($method->label);
@@ -43,6 +41,12 @@ function uc_flatrate_admin_methods() {
 
 /**
  * Configure the store default product shipping rates.
+ *
+ * @ingroup forms
+ * @see
+ *   uc_flatrate_admin_method_edit_form_validate()
+ *   uc_flatrate_admin_method_edit_form_delete()
+ *   uc_flatrate_admin_method_edit_form_submit()
  */
 function uc_flatrate_admin_method_edit_form($form_state, $mid = 0) {
   $form = array();
@@ -56,11 +60,13 @@ function uc_flatrate_admin_method_edit_form($form_state, $mid = 0) {
     '#title' => t('Shipping method title'),
     '#description' => t('The name shown to distinguish it from other flatrate methods.'),
     '#default_value' => $method->title,
+    '#required' => TRUE,
   );
   $form['label'] = array('#type' => 'textfield',
     '#title' => t('Line item label'),
     '#description' => t('The name shown to the customer when they choose a shipping method at checkout.'),
     '#default_value' => $method->label,
+    '#required' => TRUE,
   );
   $form['base_rate'] = array('#type' => 'textfield',
     '#title' => t('Base price'),
@@ -91,6 +97,9 @@ function uc_flatrate_admin_method_edit_form($form_state, $mid = 0) {
   return $form;
 }
 
+/**
+ * @see uc_flatrate_admin_method_edit_form()
+ */
 function uc_flatrate_admin_method_edit_form_validate($form, &$form_state) {
   if ($form_state['values']['op'] == t('Submit')) {
     if (!empty($form_state['values']['base_rate']) && !is_numeric($form_state['values']['base_rate'])) {
@@ -102,10 +111,16 @@ function uc_flatrate_admin_method_edit_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * @see uc_flatrate_admin_method_edit_form()
+ */
 function uc_flatrate_admin_method_edit_form_delete($form, &$form_state) {
   drupal_goto('admin/store/settings/quotes/flatrate/'. $form_state['values']['mid'] .'/delete');
 }
 
+/**
+ * @see uc_flatrate_admin_method_edit_form()
+ */
 function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
   if ($form_state['values']['mid']) {
     db_query("UPDATE {uc_flatrate_methods} SET title = '%s', label = '%s', base_rate = %f, product_rate = %f WHERE mid = %d",
@@ -131,6 +146,11 @@ function uc_flatrate_admin_method_edit_form_submit($form, &$form_state) {
  * Menu Callbacks                                                             *
  ******************************************************************************/
 
+/**
+ * Confirm deletion of a flat rate shipping method.
+ *
+ * @see uc_flatrate_admin_method_confirm_delete_submit()
+ */
 function uc_flatrate_admin_method_confirm_delete($form_state, $mid) {
   $form = array();
   $form['mid'] = array('#type' => 'value', '#value' => $mid);
@@ -142,6 +162,9 @@ function uc_flatrate_admin_method_confirm_delete($form_state, $mid) {
     t('Delete'));
 }
 
+/**
+ * @see uc_flatrate_admin_method_confirm_delete()
+ */
 function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
   db_query("DELETE FROM {uc_flatrate_methods} WHERE mid = %d", $form_state['values']['mid']);
   db_query("DELETE FROM {uc_flatrate_products} WHERE mid = %d", $form_state['values']['mid']);
@@ -158,4 +181,3 @@ function uc_flatrate_admin_method_confirm_delete_submit($form, &$form_state) {
   drupal_set_message(t('Flat rate shipping method deleted.'));
   $form_state['redirect'] = 'admin/store/settings/quotes/methods/flatrate';
 }
-

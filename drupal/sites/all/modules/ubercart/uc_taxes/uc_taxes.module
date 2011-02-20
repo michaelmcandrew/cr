@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_taxes.module,v 1.12.2.11 2009/04/18 07:29:18 islandusurper Exp $
+// $Id: uc_taxes.module,v 1.12.2.20 2010/01/27 22:23:32 islandusurper Exp $
 
 /**
  * @file
@@ -14,11 +14,17 @@ require_once('uc_taxes.ca.inc');
  * Drupal Hooks                                                               *
  ******************************************************************************/
 
+/**
+ * Implementation of hook_help().
+ */
 function uc_taxes_help($path, $arg) {
+  $output = '';
+
   switch ($path) {
     case 'admin/store/settings/taxes':
       return t('Add tax rates through this page and then use the <a href="!url">conditional actions interface</a> to add conditions to the taxes that limit which orders they are applied to. Especially important are the geographic area conditions for the delivery address.  Use the conditions link to jump to a particular tax rate conditions configuration page.', array('!url' => url(CA_UI_PATH)));
   }
+
   return $output;
 }
 
@@ -92,26 +98,36 @@ function uc_taxes_menu() {
 /**
  * Implementation of hook_form_alter().
  */
-function uc_taxes_form_alter(&$form, &$form_state, $form_id) {
+function uc_taxes_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'uc_cart_checkout_form') {
     if (isset($form['panes']['payment'])) {
-      drupal_add_js(array('ucTaxWeight' => variable_get('uc_li_tax_weight', 9)), 'setting');
+      drupal_add_js(array(
+        'ucTaxWeight' => variable_get('uc_li_tax_weight', 9),
+        'ucURL' => array(
+          'calculateTax' => url('taxes/calculate'),
+        ),
+      ), 'setting');
       drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
     }
   }
   elseif ($form_id == 'uc_order_edit_form') {
     if (isset($form['quotes'])) {
+      drupal_add_js(array(
+        'ucURL' => array(
+          'calculateTax' => url('taxes/calculate'),
+        ),
+      ), 'setting');
       drupal_add_js(drupal_get_path('module', 'uc_taxes') .'/uc_taxes.js');
     }
   }
 }
 
 /*******************************************************************************
- * Übercart Hooks
+ * Ubercart Hooks
  ******************************************************************************/
 
 /**
- * Implementation of Übercart's hook_line_item().
+ * Implementation of hook_line_item().
  */
 function uc_taxes_line_item() {
   $items[] = array(
@@ -137,6 +153,8 @@ function uc_taxes_line_item() {
 }
 
 /**
+ * Implementation of hook_order().
+ *
  * Update and save tax line items to the order.
  */
 function uc_taxes_order($op, $arg1, $arg2) {
@@ -147,7 +165,7 @@ function uc_taxes_order($op, $arg1, $arg2) {
       //$arg1->line_items = uc_order_load_line_items($arg1, TRUE);
       $context = array(
         'revision' => 'formatted',
-        'location' => 'tax-changes-log',
+        'type' => 'line_item',
         'subject' => array(
           'order' => $arg1,
         ),
@@ -208,7 +226,7 @@ function uc_line_item_tax($op, $order) {
       $taxes = uc_taxes_calculate($order);
       foreach ($taxes as $tax) {
         $lines[] = array(
-          'id' => 'tax',
+          'id' => ($tax->summed ? 'tax' : 'tax_included'),
           'title' => $tax->name,
           'amount' => $tax->amount,
           'weight' => variable_get('uc_li_tax_weight', 9) + $tax->weight / 10,
@@ -219,6 +237,9 @@ function uc_line_item_tax($op, $order) {
   }
 }
 
+/**
+ * Handle the line item subtotal before taxes.
+ */
 function uc_line_item_tax_subtotal($op, $order) {
   $amount = 0;
   if (is_array($order->products)) {
@@ -228,6 +249,9 @@ function uc_line_item_tax_subtotal($op, $order) {
   }
   if (is_array($order->line_items)) {
     foreach ($order->line_items as $key => $line_item) {
+      if ($line_item['type'] == 'subtotal') {
+        continue;
+      }
       if (substr($line_item['type'], 0, 3) != 'tax') {
         $amount += $line_item['amount'];
         $different = TRUE;
@@ -274,16 +298,12 @@ function uc_line_item_tax_subtotal($op, $order) {
  *   The saved tax rate object including the rate ID for new rates.
  */
 function uc_taxes_rate_save($rate) {
-  // Prepare the arrays for saving.
-  $rate->taxed_product_types = serialize($rate->taxed_product_types);
-  $rate->taxed_line_items = serialize($rate->taxed_line_items);
-
   // Save it as a new rate if no ID is specified.
   if (!$rate->id) {
     drupal_write_record('uc_taxes', $rate);
   }
+  // Otherwise update the existing tax rate's data.
   else {
-    // Otherwise update the existing tax rate's data.
     drupal_write_record('uc_taxes', $rate, array('id'));
   }
 
@@ -321,8 +341,8 @@ function uc_taxes_rate_load($rate_id = NULL) {
   if ($rate_id) {
     return $rates[$rate_id];
   }
+  // Or return the whole shebang.
   else {
-    // Or return the whole shebang.
     return $rates;
   }
 }
@@ -342,7 +362,7 @@ function uc_taxes_rate_delete($rate_id) {
 }
 
 /**
- * Calculates the taxes for an order based on enabled tax modules.
+ * Calculate the taxes for an order based on enabled tax modules.
  *
  * @param $order
  *   The full order object for the order want to calculate taxes for.
@@ -386,6 +406,14 @@ function uc_taxes_calculate_tax($order) {
 
   $order->taxes = array();
 
+  if (isset($order->order_status)) {
+    $state = uc_order_status_data($order->order_status, 'state');
+    $use_same_rates = in_array($state, array('payment_received', 'completed'));
+  }
+  else {
+    $use_same_rates = FALSE;
+  }
+
   $arguments = array(
     'order' => array(
       '#entity' => 'uc_order',
@@ -403,9 +431,19 @@ function uc_taxes_calculate_tax($order) {
       '#data' => $account,
     ),
   );
+
+  $predicates = ca_load_trigger_predicates('calculate_taxes');
   foreach (uc_taxes_rate_load() as $tax) {
+    if ($use_same_rates) {
+      foreach ((array)$order->line_items as $old_line) {
+        if ($old_line['type'] == 'tax' && $old_line['data']['tax_id'] == $tax->id) {
+          $tax->rate = $old_line['data']['tax_rate'];
+          break;
+        }
+      }
+    }
+
     $arguments['tax']['#data'] = $tax;
-    $predicates = ca_load_trigger_predicates('calculate_taxes');
     if (ca_evaluate_conditions($predicates['uc_taxes_'. $tax->id], $arguments)) {
       $line_item = uc_taxes_action_apply_tax($order, $tax);
       if ($line_item) {
@@ -423,28 +461,29 @@ function uc_taxes_calculate_tax($order) {
  * Calculate tax amounts for an order in the payment checkout pane.
  */
 function uc_taxes_javascript() {
-  drupal_set_header("Content-Type: text/javascript; charset=utf-8");
   $order = $_POST['order'];
   if ($order = unserialize(rawurldecode($order))) {
     $taxes = module_invoke_all('calculate_tax', $order);
-    $subtotal = uc_line_item_tax_subtotal('load', $order);
-    if (is_array($subtotal) && !empty($taxes)) {
-      $taxes['subtotal'] = array('id' => 'subtotal', 'name' => $subtotal[0]['title'], 'amount' => $subtotal[0]['amount'], 'weight' => -10);
-    }
-    //drupal_set_message('<pre>'. print_r($taxes, TRUE) .'</pre>');
-    if (count($taxes)) {
-      print drupal_to_js((array)$taxes);
-    }
-    else {
-      print '{}';
+    $callback = _line_item_data('tax_subtotal', 'callback');
+    if (function_exists($callback)) {
+      $subtotal = $callback('load', $order);
+      if (is_array($subtotal) && !empty($taxes)) {
+        $taxes['subtotal'] = (object)array(
+          'id' => 'subtotal',
+          'name' => $subtotal[0]['title'],
+          'amount' => $subtotal[0]['amount'],
+          'weight' => -10,
+          'summed' => 0,
+        );
+      }
     }
   }
-  else {
-    print '{}';
-  }
-  exit();
+  drupal_json((array) $taxes);
 }
 
+/**
+ * Calculate tax for a single product.
+ */
 function uc_taxes_apply_item_tax($item, $tax) {
   $node = node_load($item->nid);
 
@@ -500,8 +539,15 @@ function uc_taxes_apply_tax($order, $tax) {
   }
   $amount = $taxable_amount * $tax->rate;
   if ($amount) {
-    $line_item = (object)array('id' => $tax->id, 'name' => $tax->name, 'amount' => $amount, 'weight' => $tax->weight);
+    $line_item = (object)array(
+      'id' => $tax->id,
+      'name' => $tax->name,
+      'amount' => $amount,
+      'weight' => $tax->weight,
+      'summed' => 1,
+    );
     $line_item->data = array(
+      'tax_id' => $tax->id,
       'tax_rate' => $tax->rate,
       'taxable_amount' => $taxable_amount,
       'tax_jurisdiction' => $tax->name,

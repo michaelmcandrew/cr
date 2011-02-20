@@ -1,47 +1,57 @@
 <?php
-// $Id: uc_catalog.install,v 1.9.2.8 2009/02/04 13:44:30 islandusurper Exp $
+// $Id: uc_catalog.install,v 1.9.2.10 2010/03/19 21:27:18 tr Exp $
 
 /**
  * @file
  * Install hooks for uc_catalog.module.
  */
 
+/**
+ * Implementation of hook_schema().
+ */
 function uc_catalog_schema() {
   $schema = array();
 
   $schema['uc_catalog_images'] = array(
+    'description' => 'Provides a relation between a catalog taxonomy term in {term_data} and an image in the {files} table.',
     'fields' => array(
       'fid' => array(
+        'description' => 'Primary key: The {files}.fid. of the file',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'tid' => array(
+        'description' => 'The {term_data}.tid.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'filename' => array(
+        'description' => 'The {files}.filename of the file.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'filepath' => array(
+        'description' => 'The {files}.filepath of the file.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'filemime' => array(
+        'description' => 'The {files}.filemime of the file.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'filesize' => array(
+        'description' => 'The {files}.filesize of the file.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -54,6 +64,11 @@ function uc_catalog_schema() {
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ *
+ * Creates a Catalog vocabulary or uses one by that name that may already exist.
+ */
 function uc_catalog_install() {
   $t = get_t();
   //Find possible Product Catalog vocabulary.
@@ -72,6 +87,9 @@ function uc_catalog_install() {
   drupal_install_schema('uc_catalog');
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_catalog_uninstall() {
   drupal_uninstall_schema('uc_catalog');
   if ($vid = variable_get('uc_catalog_vid', 0)) {

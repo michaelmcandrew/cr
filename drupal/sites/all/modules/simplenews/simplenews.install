@@ -1,5 +1,5 @@
 <?php
-// $Id: simplenews.install,v 1.8.2.26 2009/10/24 16:30:44 sutharsan Exp $
+// $Id: simplenews.install,v 1.8.2.33 2010/05/21 15:37:41 sutharsan Exp $
 
 /**
  * @file
@@ -75,7 +75,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
       's_status' => array(
-        'description' => 'Send status of the newsletter issue (0 = not send; 1 = pending; 2 = send). ',
+        'description' => 'Sent status of the newsletter issue (0 = not send; 1 = pending; 2 = send). ',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
@@ -159,12 +159,19 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = send).',
+        'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = done).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny',
+      ),
+      'error' => array(
+        'description' => 'A boolean indicating whether an error occured while sending the email.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'timestamp' => array(
         'description' => 'The time status was set or changed.',
@@ -185,8 +192,13 @@ function simplenews_schema() {
  */
 function simplenews_install() {
   if (drupal_install_schema('simplenews')) {
-    drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.',
-    array('!simplenews_help' => url('admin/help/simplenews'))));
+    if (module_exists('help')) {
+      drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.',
+        array('!simplenews_help' => url('admin/help/simplenews'))));
+    }
+    else {
+      drupal_set_message(t('Simplenews was successfully installed.'));
+    }
   }
   else {
     drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
@@ -386,7 +398,7 @@ function simplenews_update_6001() {
         'default' => '',
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = send).',
+        'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = send).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -487,7 +499,7 @@ function simplenews_update_6004() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = send).',
+        'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = send).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -582,4 +594,44 @@ function simplenews_update_6008() {
   $vocabulary['required'] = TRUE;
   taxonomy_save_vocabulary($vocabulary);
   return array();
+}
+
+/**
+ * Addition of error to simplenews_mail_cache to mark an email error.
+ */
+function simplenews_update_6009() {
+  $ret = array();
+  db_add_field($ret, 'simplenews_mail_spool', 'error', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+  return $ret;
+}
+
+function simplenews_update_6200() {
+  // Added for compatibility with HEAD.
+  return array();
+}
+
+/**
+ * Faulty update function. Corrected by the next one.
+ *
+ * @see simplenews_update_6011().
+ */
+function simplenews_update_6010() {
+  $ret = array();
+  // Function removed.
+  
+  return $ret;
+}
+
+/**
+ * Correction of field size mismatch caused by simplenews_update_6009().
+ */
+function simplenews_update_6011() {
+  $ret = array();
+  db_change_field($ret, 'simplenews_mail_spool', 'error', 'error', array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+  ));
+  return $ret;
 }

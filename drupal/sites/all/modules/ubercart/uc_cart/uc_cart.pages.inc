@@ -1,13 +1,17 @@
 <?php
-// $Id: uc_cart.pages.inc,v 1.1.2.11 2009/04/28 21:03:14 islandusurper Exp $
+// $Id: uc_cart.pages.inc,v 1.1.2.21 2010/02/24 04:42:09 tr Exp $
 
 /**
  * @file
  * Cart menu items.
- *
  */
 
-// Displays cart view page with form to adjust cart contents or go to checkout.
+/**
+ * Display the cart view page.
+ *
+ * Show the products in the cart with a form to adjust cart contents or go to
+ * checkout.
+ */
 function uc_cart_view() {
   // Failsafe so that this function only works when called with no arguments.
   // This prevents the accidental wiping of the cart_order session variable.
@@ -59,12 +63,11 @@ function uc_cart_checkout() {
 
   $context = array(
     'revision' => 'altered',
-    'location' => 'minimum-subtotal',
+    'type' => 'amount',
   );
 
   if (($min = uc_price(variable_get('uc_minimum_subtotal', 0), $context)) > 0) {
     $subtotal = 0;
-    $items = uc_cart_get_contents();
     if (is_array($items) && count($items) > 0) {
       foreach ($items as $item) {
         $data = module_invoke($item->module, 'cart_display', $item);
@@ -73,21 +76,12 @@ function uc_cart_checkout() {
         }
       }
     }
-	$max=1500;
     if ($subtotal < $min) {
       $context = array(
         'revision' => 'formatted-original',
-        'location' => 'minimum-subtotal-message',
+        'type' => 'amount',
       );
       drupal_set_message(variable_get('uc_minimum_subtotal_text', t('The minimum order subtotal for checkout is !min.', array('!min' => uc_price($min, $context)))), 'error');
-      drupal_goto('cart');
-    }
-    if ($subtotal > $max) {
-      $context = array(
-        'revision' => 'formatted-original',
-        'location' => 'minimum-subtotal-message',
-      );
-      drupal_set_message(variable_get('uc_minimum_subtotal_text', t('The maximum order subtotal for checkout is !max.', array('!max' => uc_price($max, $context)))), 'error');
       drupal_goto('cart');
     }
   }
@@ -95,7 +89,9 @@ function uc_cart_checkout() {
   // Send anonymous users to login page when anonymous checkout is disabled.
   if (!$user->uid && !variable_get('uc_checkout_anonymous', TRUE)) {
     drupal_set_message(t('You must login before you can proceed to checkout.'));
-    drupal_set_message(t('If you do not have an account, you can <a href="!url">click here</a> to create one.', array('!url' => url('user/register', array('absolute' =>  TRUE)))));
+    if (variable_get('user_register', 1) != 0) {
+      drupal_set_message(t('If you do not have an account yet, you should <a href="!url">register now</a>.', array('!url' => url('user/register'))));
+    }
     $_SESSION['checkout-redirect'] = TRUE;
     drupal_goto('user');
   }
@@ -116,6 +112,16 @@ function uc_cart_checkout() {
   return $output;
 }
 
+/**
+ * The checkout form built up from the enabled checkout panes.
+ *
+ * @ingroup forms
+ * @see
+ *   theme_uc_cart_checkout_form()
+ *   uc_cart_checkout_form_validate()
+ *   uc_cart_checkout_form_review()
+ *   uc_cart_checkout_review()
+ */
 function uc_cart_checkout_form() {
   global $user;
 
@@ -209,26 +215,7 @@ function uc_cart_checkout_form() {
   }
   unset($_SESSION['expanded_panes']);
 
-  $context = array(
-    'revision' => 'altered',
-    'location' => 'cart-checkout-item',
-  );
   $contents = uc_cart_get_contents();
-  foreach ($contents as $key => $item) {
-    $price_info = array(
-      'price' => $item->price,
-      'qty' => $item->qty,
-    );
-    $context['subject'] = array(
-      'cart_item' => $item,
-      'node' => node_load($item->nid),
-    );
-
-    // Get the altered price per unit, as ordered products have a locked-in
-    // price. Price altering rules may change over time, but the amount paid
-    // by the customer does not after the fact.
-    $contents[$key]->price = uc_price($price_info, $context) / $item->qty;
-  }
 
   $form['cart_contents'] = array(
     '#type' => 'hidden',
@@ -248,6 +235,12 @@ function uc_cart_checkout_form() {
   return $form;
 }
 
+/**
+ * Add markup and styling to the checkout panes.
+ *
+ * @ingroup themeable
+ * @see uc_cart_checkout_form()
+ */
 function theme_uc_cart_checkout_form($form) {
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
@@ -274,6 +267,9 @@ function theme_uc_cart_checkout_form($form) {
   return $output;
 }
 
+/**
+ * @see uc_cart_checkout_form()
+ */
 function uc_cart_checkout_form_validate($form, &$form_state) {
   global $user;
 
@@ -288,7 +284,32 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
     $order->order_status = uc_order_state_default('in_checkout');
   }
 
+  db_query("DELETE FROM {uc_order_products} WHERE order_id = %d", $order->order_id);
   $order->products = unserialize($form_state['values']['cart_contents']);
+
+  $context = array(
+    'revision' => 'original',
+    'type' => 'order_product',
+  );
+  foreach ($order->products as $key => $item) {
+    $price_info = array(
+      'price' => $item->price,
+      'qty' => $item->qty,
+    );
+    $context['subject'] = array(
+      'order' => $order,
+      'product' => $item,
+      'node' => node_load($item->nid),
+    );
+
+    // Get the altered price per unit, as ordered products have a locked-in
+    // price. Price altering rules may change over time, but the amount paid
+    // by the customer does not after the fact.
+    $price = uc_price($price_info, $context) / $item->qty;
+    if ($order->products[$key]->price != $price) {
+      $order->products[$key]->data['altered_price'] = $price;
+    }
+  }
 
   $order->order_total = uc_order_get_total($order, TRUE);
 
@@ -308,6 +329,9 @@ function uc_cart_checkout_form_validate($form, &$form_state) {
   uc_order_save($order);
 }
 
+/**
+ * @see uc_cart_checkout_form()
+ */
 function uc_cart_checkout_form_submit($form, &$form_state) {
   if ($_SESSION['checkout_valid'] === FALSE) {
     $url = 'cart/checkout';
@@ -324,6 +348,8 @@ function uc_cart_checkout_form_submit($form, &$form_state) {
 
 /**
  * Allow a customer to review their order before finally submitting it.
+ *
+ * @see uc_cart_checkout_form()
  */
 function uc_cart_checkout_review() {
   drupal_add_js(drupal_get_path('module', 'uc_cart') .'/uc_cart.js');
@@ -382,8 +408,8 @@ function uc_cart_checkout_review() {
 function theme_uc_cart_checkout_review($panes, $form) {
   drupal_add_css(drupal_get_path('module', 'uc_cart') .'/uc_cart.css');
 
-  $output = '<p>'. check_markup(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')), variable_get('uc_checkout_review_instructions_format', FILTER_FORMAT_DEFAULT), FALSE)
-           .'</p><table class="order-review-table">';
+  $output = check_markup(variable_get('uc_checkout_review_instructions', uc_get_message('review_instructions')), variable_get('uc_checkout_review_instructions_format', FILTER_FORMAT_DEFAULT), FALSE)
+           .'<table class="order-review-table">';
 
   foreach ($panes as $title => $data) {
     $output .= '<tr class="pane-title-row"><td colspan="2">'. $title
@@ -417,6 +443,14 @@ function theme_uc_cart_checkout_review($panes, $form) {
   return $output;
 }
 
+/**
+ * Give customers the option to finish checkout or go revise their information.
+ *
+ * @ingroup forms
+ * @see
+ *   uc_cart_checkout_review_form_back()
+ *   uc-cart_checkout_review_form_submit()
+ */
 function uc_cart_checkout_review_form() {
   // Set the session variable to pass the redirect check on the pageload.
   if ($_POST['op'] == t('Back')) {
@@ -430,17 +464,27 @@ function uc_cart_checkout_review_form() {
   );
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Take payment'),
+    '#value' => t('Submit order'),
   );
 
   return $form;
 }
 
+/**
+ * Returns the customer to the checkout page to edit their information.
+ *
+ * @see uc_cart_checkout_review_form()
+ */
 function uc_cart_checkout_review_form_back($form, &$form_state) {
   unset($_SESSION['do_review']);
   $form_state['redirect'] = 'cart/checkout';
 }
 
+/**
+ * Final checks to make sure the order can be completed.
+ *
+ * @see uc_cart_checkout_review_form()
+ */
 function uc_cart_checkout_review_form_submit($form, &$form_state) {
   // Invoke hook_order($op = 'submit') to test to make sure the order can
   // be completed... used for auto payment in uc_credit.module.
@@ -448,21 +492,25 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
   $error = FALSE;
 
   // Invoke it on a per-module basis instead of all at once.
-  foreach (module_implements('order') as $module) {
-    $result = module_invoke($module, 'order', 'submit', $order, NULL);
+  foreach (module_list() as $module) {
+    $function = $module .'_order';
+    if (function_exists($function)) {
+      // $order must be passed by reference.
+      $result = $function('submit', $order, NULL);
 
-    $msg_type = 'status';
-    if ($result[0]['pass'] === FALSE) {
-      $error = TRUE;
-      $msg_type = 'error';
-    }
-    if (!empty($result[0]['message'])) {
-      drupal_set_message($result[0]['message'], $msg_type);
-    }
+      $msg_type = 'status';
+      if ($result[0]['pass'] === FALSE) {
+        $error = TRUE;
+        $msg_type = 'error';
+      }
+      if (!empty($result[0]['message'])) {
+        drupal_set_message($result[0]['message'], $msg_type);
+      }
 
-    // Stop invoking the hooks if there was an error.
-    if ($error) {
-      break;
+      // Stop invoking the hooks if there was an error.
+      if ($error) {
+        break;
+      }
     }
   }
 
@@ -476,6 +524,9 @@ function uc_cart_checkout_review_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Completes the sale and finishes checkout.
+ */
 function uc_cart_checkout_complete() {
   if (!$_SESSION['do_complete']) {
     drupal_goto('cart');
@@ -497,9 +548,8 @@ function uc_cart_checkout_complete() {
 
   $page = variable_get('uc_cart_checkout_complete_page', '');
   if (!empty($page)) {
-    drupal_goto(variable_get('uc_cart_checkout_complete_page', ''));
+    drupal_goto($page);
   }
 
   return $output;
 }
-

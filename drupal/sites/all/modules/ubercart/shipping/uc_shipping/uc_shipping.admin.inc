@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_shipping.admin.inc,v 1.1.2.8 2009/04/28 21:03:15 islandusurper Exp $
+// $Id: uc_shipping.admin.inc,v 1.1.2.16 2010/07/30 15:06:21 islandusurper Exp $
 
 /**
  * @file
@@ -10,7 +10,7 @@
  * Display a list of an order's packaged products.
  */
 function uc_shipping_order_packages($order) {
-  $header = array(t('Package ID'), t('Products'), t('Shipping type'), t('Package type'), t('Shipment ID'), t('Tracking number'), t('Labels'), array('data' => t('Actions'), 'colspan' => 3));
+  $header = array(t('Package ID'), t('Products'), t('Shipping type'), t('Package type'), t('Shipment ID'), t('Tracking number'), t('Labels'), array('data' => t('Actions'), 'colspan' => 4));
   $rows = array();
   $result = db_query("SELECT * FROM {uc_packages} WHERE order_id = %d", $order->order_id);
   while ($package = db_fetch_object($result)) {
@@ -31,6 +31,7 @@ function uc_shipping_order_packages($order) {
     }
     $row[] = isset($package->label_image) ? l(theme('imagecache', 'uc_thumbnail', $package->label_image, t('Shipping Label'), t('Shipping Label')), 'admin/store/orders/'. $order->order_id .'/shipments/labels/'. $method .'/'. $package->label_image, array('html' => TRUE)) : '';
     $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/edit');
+    $row[] = l(t('ship'), 'admin/store/orders/'. $order->order_id .'/shipments/new', array('query' => 'pkgs[]='. $package->package_id));
     $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/delete');
     if ($package->sid) {
       $row[] = l(t('cancel shipment'), 'admin/store/orders/'. $order->order_id .'/packages/'. $package->package_id .'/cancel');
@@ -42,7 +43,7 @@ function uc_shipping_order_packages($order) {
     $rows[] = $row;
   }
   if (empty($rows)) {
-    $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 10);
+    $rows[][] = array('data' => t("This order's products have not been organized into packages."), 'colspan' => 11);
   }
   $output = theme('table', $header, $rows);
   $result = db_query("SELECT op.order_product_id, CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END AS total, SUM(pp.qty) AS packaged FROM {uc_order_products} AS op LEFT JOIN {uc_packaged_products} AS pp ON op.order_product_id = pp.order_product_id WHERE op.order_id = %d AND op.data LIKE '%%%s%%' GROUP BY op.order_product_id HAVING SUM(pp.qty) IS NULL OR CASE WHEN COUNT(pp.qty) = 0 THEN 0 ELSE SUM(op.qty) / COUNT(pp.qty) END > SUM(pp.qty)", $order->order_id, 's:9:"shippable";s:1:"1";');
@@ -56,9 +57,10 @@ function uc_shipping_order_packages($order) {
  * Put ordered products into a package.
  *
  * @ingroup forms
- * @see theme_uc_shipping_new_package_fieldset()
- * @see uc_shipping_new_package_validate()
- * @see uc_shipping_new_package_submit()
+ * @see
+ *   theme_uc_shipping_new_package_fieldset()
+ *   uc_shipping_new_package_validate()
+ *   uc_shipping_new_package_submit()
  */
 function uc_shipping_new_package($form_state, $order) {
   $breadcrumb = drupal_get_breadcrumb();
@@ -326,6 +328,11 @@ function uc_shipping_package_edit_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/store/orders/'. $package->order_id .'/packages';
 }
 
+/**
+ * Confirm cancellation of a package's shipment.
+ *
+ * @see uc_shipping_package_cancel_confirm_submit()
+ */
 function uc_shipping_package_cancel_confirm($form_state, $order, $package) {
   $form = array();
   $form['order_id'] = array('#type' => 'value', '#value' => $order->order_id);
@@ -335,6 +342,9 @@ function uc_shipping_package_cancel_confirm($form_state, $order, $package) {
   return $output;
 }
 
+/**
+ * @see uc_shipping_package_cancel_confirm()
+ */
 function uc_shipping_package_cancel_confirm_submit($form, &$form_state) {
   $package = uc_shipping_package_load($form_state['values']['package_id']);
   $shipment = uc_shipping_shipment_load($package->sid);
@@ -383,7 +393,7 @@ function uc_shipping_package_delete_confirm_submit($form, &$form_state) {
  */
 function uc_shipping_order_shipments($order) {
   $result = db_query("SELECT * FROM {uc_shipments} WHERE order_id = %d", $order->order_id);
-  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 3));
+  $header = array(t('Shipment ID'), t('Name'), t('Company'), t('Destination'), t('Ship date'), t('Estimated delivery'), t('Tracking number'), array('data' => t('Actions'), 'colspan' => 5));
   $rows = array();
   while ($shipment = db_fetch_object($result)) {
     $row = array();
@@ -396,11 +406,13 @@ function uc_shipping_order_shipments($order) {
     $row[] = is_null($shipment->tracking_number) ? t('n/a') : check_plain($shipment->tracking_number);
     $row[] = l(t('view'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/view');
     $row[] = l(t('edit'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/edit');
+    $row[] = l(t('print'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/print');
+    $row[] = l(t('packing slip'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/packing_slip');
     $row[] = l(t('delete'), 'admin/store/orders/'. $order->order_id .'/shipments/'. $shipment->sid .'/delete');
     $rows[] = $row;
   }
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 10));
+    $rows[] = array(array('data' => t('No shipments have been made for this order.'), 'colspan' => 12));
   }
   $output = theme('table', $header, $rows);
   $packages = db_result(db_query("SELECT COUNT(*) FROM {uc_packages} WHERE order_id = %d AND sid IS NULL", $order->order_id));
@@ -431,6 +443,8 @@ function uc_shipping_new_shipment($form_state, $order) {
   $breadcrumb[] = l(t('Order @id', array('@id' => $order->order_id)), 'admin/store/orders/'. $order->order_id);
   $breadcrumb[] = l(t('Shipments'), 'admin/store/orders/'. $order->order_id .'/shipments');
   drupal_set_breadcrumb($breadcrumb);
+
+  $checked_pkgs = (array) $_REQUEST['pkgs'];
 
   $form = array('#tree' => TRUE);
   $form['order_id'] = array('#type' => 'hidden', '#value' => $order->order_id);
@@ -466,7 +480,7 @@ function uc_shipping_new_shipment($form_state, $order) {
     foreach ($packages as $package) {
       $pkgs_exist = TRUE;
       $package_row = array();
-      $package_row['checked'] = array('#type' => 'checkbox', '#default_value' => 0);
+      $package_row['checked'] = array('#type' => 'checkbox', '#default_value' => (in_array($package->package_id, $checked_pkgs) ? 1 : 0));
       $package_row['package_id'] = array('#value' => $package->package_id);
       $product_list = array();
       foreach ($package->products as $product) {
@@ -588,14 +602,8 @@ function uc_shipping_shipment_view($order, $shipment) {
     $rows[] = array(t('Services:'), $shipment->accessorials);
   }
   $context = array(
-    'location' => 'shipping-order-view',
-    'class' => array(
-      'cost',
-    ),
-    'subject' => array(
-      'shipment' => $shipment,
-      'field' => 'cost',
-    ),
+    'revision' => 'themed',
+    'type' => 'amount',
   );
   $rows[] = array(t('Cost:'), uc_price($shipment->cost, $context, array('label' => FALSE)));
   $output .= theme('table', array(), $rows, array('style' => 'width:auto'));
@@ -771,6 +779,11 @@ function uc_shipping_shipment_edit($form_state, $order, $shipment) {
   return $form;
 }
 
+/**
+ * Ensure the package dimensions are positive numbers.
+ *
+ * @see uc_shipping_shipment_edit()
+ */
 function uc_shipping_shipment_edit_validate($form, &$form_state) {
   foreach ($form_state['values']['packages'] as $key => $package) {
     foreach (array('length', 'width', 'height') as $property) {
@@ -831,9 +844,49 @@ function uc_shipping_shipment_edit_submit($form, &$form_state) {
 }
 
 /**
+ * Display the packing slip and shipping labels for printing.
+ */
+function theme_uc_shipping_shipment_print($order, $shipment, $labels = TRUE) {
+  $language = $GLOBALS['language'];
+  $output = <<<EOHTML
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{$language->language}" lang="{$language->language}" dir="{$language->direction}">
+<head>
+  <title>Packing slip and labels</title>
+  <style>
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+EOHTML;
+
+  $output .= theme('uc_packing_slip', $order, $shipment);
+
+  if ($labels) {
+    foreach ($shipment->packages as $id => $package) {
+      if ($package->label_image && ($path = file_create_path($package->label_image)) && file_exists($path)) {
+        // TODO: Find a way to store these magic numbers specifically for UPS.
+        list($width, $height) = array(672, 392);
+        $output .= '<br class="page-break" />' . "\n";;
+        $output .= theme('image', file_create_url($package->label_image), '', '', array('width' => $width, 'height' => $height), FALSE) ."\n";
+      }
+    }
+  }
+
+  //$output .= dpr($order, TRUE, 'order');
+  //$output .= dpr($shipment, TRUE, 'shipment');
+
+  $output .= '</body></html>';
+
+  print $output;
+  exit();
+}
+
+/**
  * Decide to release packages to be put on another shipment.
  *
- * @ingroup forms
  * @see uc_shipping_shipment_delete_confirm_submit()
  */
 function uc_shipping_shipment_delete_confirm($form_state, $order, $shipment) {
@@ -880,6 +933,10 @@ function uc_shipping_make_shipment() {
     $methods = module_invoke_all('shipping_method');
     $method = $methods[$method_id];
     if (isset($method)) {
+      $inc_file = drupal_get_path('module', $method['module']) .'/'. $method['ship']['file'];
+      if (is_file($inc_file)) {
+        require_once $inc_file;
+      }
       return drupal_get_form($method['ship']['callback'], $order, $package_ids);
     }
     else {
@@ -895,7 +952,6 @@ function uc_shipping_make_shipment() {
   }
   else {
     drupal_set_message(t('There is no sense in making a shipment with no packages on it, right?'));
-    drupal_goto('admin/store/orders/'. $args[0]);
+    drupal_goto('admin/store/orders/'. $args[0]->order_id .'/shipments/new');
   }
 }
-

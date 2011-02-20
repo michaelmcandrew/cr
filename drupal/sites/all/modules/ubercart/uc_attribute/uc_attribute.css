@@ -1,11 +1,12 @@
-/* $Id: uc_attribute.css,v 1.4.4.2 2009/01/02 20:18:43 islandusurper Exp $ */
+/* $Id: uc_attribute.css,v 1.4.4.5 2010/03/27 18:18:26 tr Exp $ */
 
 .options {
   display: inline;
 }
 
-tr.draggable div.form-item {
+table.product_attributes tr.draggable .form-item {
   display: inline;
+  white-space: normal;
 }
 
 #option-key td:first-child {

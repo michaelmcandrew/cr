@@ -20,13 +20,11 @@
 
 .faq-question {
   padding-top: 5px;
-padding-bottom: 13px;
-  border-top: solid #d3d3d3 1px;
-font-weight: bold;
+  padding-left: 20px;
 }
 
 .faq-answer {
-  padding-left: 0px;
+  padding-left: 40px;
 }
 
 .faq-dl-hide-answer {

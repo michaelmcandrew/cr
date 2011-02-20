@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_reports.module,v 1.11.2.10 2009/02/13 22:01:14 islandusurper Exp $
+// $Id: uc_reports.module,v 1.11.2.15 2010/07/12 01:30:44 tr Exp $
 
 /**
  * @file
@@ -11,6 +11,9 @@
  * number sold, and revenue produced.
  */
 
+/**
+ * The maximum number of records.
+ */
 define('UC_REPORTS_MAX_RECORDS', PHP_INT_MAX);
 
 /*******************************************************************************
@@ -50,26 +53,26 @@ function uc_reports_help($path, $arg) {
     switch ($path) {
       case 'admin/store/reports/customers':
         $output .= t("The following are total orders, products, sales, and average order totals for each store customer. Clicking on the header links will toggle a descending or ascending order for that column. Clicking on a customer's name will take you to a detailed list of orders that customer has made. Clicking on a customers username will take you to their account page.");
-  break;
+        break;
       case 'admin/store/reports/products':
         $output .= t('The table lists each product listed in the store, its amount sold, how many times it has been viewed, revenue it has produced, and gross profit it has generated. If you do not see the number of views you must enable the Statistics module on the <a href="!url">module administration page</a>.', array('!url' => url('admin/build/modules')));
-  break;
+        break;
       case 'admin/store/reports/sales':
         $output .= t('These are the sales for the last two days, average sales for the month, and the projected sales for the rest of the month. Further down the list you will see other sales statistics.');
-  break;
+        break;
       case 'admin/store/reports/sales/custom':
         $output .= t('Expand the fieldset below to customize the date range of this report, the statuses of orders displayed, and product display options.');
-  break;
+        break;
     }
     if (strpos($path, 'admin/store/reports/sales/year') === 0) {
-      $year = (is_null($_GET['year'])) ? format_date(time(), 'custom', "Y") : $_GET['year'];
+      $year = $arg[5] ? $arg[5] : format_date(time(), 'custom', "Y");
       $output .= t('This is the monthly break down of sales for the year @year. Clicking on each link will take you to a list of orders during that month.', array('@year' => $year));
     }
     $output .= '</p>';
 
     // Include the statuses/offset as needed.
     if ($include_offset) {
-      $output .= "<p>". t('All sales reports are <b>GMT !offset</b> (Default site timezone)', array('!offset' => variable_get('date_default_timezone', 0) / 36)) ."</p>";
+      $output .= "<p>". t('All sales reports are <b>GMT !offset</b> (Default site timezone)', array('!offset' => sprintf('%+05d', variable_get('date_default_timezone', 0) / 36))) ."</p>";
     }
     if ($include_statuses) {
       $statuses = array();
@@ -114,6 +117,22 @@ function uc_reports_menu() {
     'page callback' => 'uc_reports_products',
     'access arguments' => array('view reports'),
     'type' => MENU_NORMAL_ITEM,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/products/summary'] = array(
+    'title' => 'Product report',
+    'access arguments' => array('view reports'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+    'file' => 'uc_reports.admin.inc',
+  );
+  $items['admin/store/reports/products/custom'] = array(
+    'title' => 'Custom product report',
+    'description' => 'View a customized product report',
+    'page callback' => 'uc_reports_products_custom',
+    'access arguments' => array('view reports'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -5,
     'file' => 'uc_reports.admin.inc',
   );
   $items['admin/store/reports/sales'] = array(
@@ -185,10 +204,6 @@ function uc_reports_init() {
 function uc_reports_perm() {
   return array('view reports');
 }
-
-/* ************************************************************************* *
- *  Callback Functions, Forms, and Tables                                    *
- * ************************************************************************* */
 
 /******************************************************************************
  * Module and Helper Functions                                                *
@@ -310,21 +325,27 @@ function _uc_reports_get_sales($time, $period = 'day') {
   return $output;
 }
 
-// Returns a SQL friendly array of order statuses for orders used in reports.
+/**
+ * Return a SQL friendly array of order statuses for orders used in reports.
+ */
 function _uc_reports_order_statuses() {
   $statuses = variable_get('uc_reports_reported_statuses', array('completed'));
 
   return "('". implode("', '", $statuses) ."')";
 }
 
-// Returns the sitewide timezone offset for use in reports.
+/**
+ * Return the sitewide timezone offset for use in reports.
+ */
 function _uc_reports_timezone_offset() {
   return variable_get('date_default_timezone', 0);
 }
 
 /**
- * With a given time span for a report and specified interval for subreports,
- * return a list of timespans for subreports over that report's time span.
+ * Return a list of timespans for subreports over that report's time span.
+ *
+ * To be used with a given time span for a report and specified interval for
+ * subreports.
  *
  * @param $start
  *   A UNIX time stamp representing the time to start the report.
@@ -352,12 +373,13 @@ function _uc_reports_subreport_intervals($report_start, $report_end, $interval) 
 
 /**
  * Given a timestamp and a length of time, return the offset timestamp
+ *
  * @param $time
  *   A UNIX timestamp
  * @param $interval
  *   The text representing the amount of time (e.g. 'day', 'week')
  * @return:
- * The offset UNIX timestamp
+ *   The offset UNIX timestamp
  */
 function _uc_reports_end_interval($time, $interval = 'month') {
   if (empty($time)) {
@@ -383,4 +405,3 @@ function _uc_reports_end_interval($time, $interval = 'month') {
 
   return $temp;
 }
-

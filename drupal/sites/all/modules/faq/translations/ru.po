@@ -1,49 +1,48 @@
-# Russian translation of faq (6.x-1.x-dev)
+# Russian translation of faq (6.x-1.9)
 # Copyright (c) 2009 by the Russian translation team
 # Generated from files:
-#  faq.module,v 1.1.4.52.2.105 2009/05/09 10:47:35 snpower
-#  faq.admin.inc,v 1.1.2.10 2009/01/04 20:42:34 snpower
+#  faq.admin.inc,v 1.1.2.21 2009/11/23 19:16:37 snpower
+#  faq.module,v 1.1.4.52.2.123 2009/11/24 16:38:05 snpower
 #  faq.info,v 1.1.2.3.2.1 2007/09/05 14:05:48 snpower
-#  faq.install,v 1.1.4.16.2.24 2009/01/12 09:44:18 snpower
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: faq (6.x-1.x-dev)\n"
-"POT-Creation-Date: 2009-06-11 00:54+0400\n"
-"PO-Revision-Date: 2009-05-22 08:07+0400\n"
+"Project-Id-Version: faq (6.x-1.9)\n"
+"POT-Creation-Date: 2009-11-26 16:44+0300\n"
+"PO-Revision-Date: 2009-11-26 16:43+0300\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n%100)>=20)))?(1):2));\n"
 
-#: faq.module:722,341; faq.admin.inc:432,51,434,441,444,452
-msgid "Save configuration"
-msgstr "Сохранить конфигурацию"
-
-#: faq.module:608; faq.admin.inc:318,320,327,335
+#: faq.admin.inc:356
 msgid "Search"
 msgstr "Поиск"
 
-#: faq.module:116,113,133,136,119,120
+#: faq.module:82,112
+msgid "List"
+msgstr "Список"
+
+#: faq.module:164
 msgid "Categories"
 msgstr "Категории"
 
-#: faq.module:326; faq.admin.inc:36
+#: faq.admin.inc:36
 msgid "Title"
 msgstr "Заголовок"
 
-#: faq.module:127,123,144,147,130,131
-msgid "Weight"
-msgstr "Вес"
-
-#: faq.module:337,294,814,289,311,365,314,368,1231,1234,1258,1273,1272,1274,1292,1293,1286
+#: faq.module:1332
 msgid "Home"
 msgstr "Главная"
 
-#: faq.module:154,149,171,174,157,158
+#: faq.module:190
 msgid "Question"
 msgstr "Вопрос"
+
+#: faq.module:91,122
+msgid "Order"
+msgstr "Позиция"
 
 #: faq.module:20
 msgid ""
@@ -76,17 +75,7 @@ msgstr ""
 "различные варианты отображения "
 "вопросов и ответов."
 
-#: faq.module:22
-msgid ""
-"All users with 'view faq' permissions will be able to view the "
-"generated FAQ page at 'www.example.com/faq'."
-msgstr ""
-"Все пользователи с правом 'просмотр "
-"ЧаВо' могут просматривать "
-"генерируемую ЧаВо страницу по адресу "
-"'www.example.com/faq'."
-
-#: faq.module:106,104,87,25,123,107,126,90,109,91,110
+#: faq.module:25,135,154
 msgid ""
 "Allows the user to configure the layout of questions and answers on a "
 "FAQ page."
@@ -99,25 +88,21 @@ msgstr ""
 msgid "Add a question and answer to a FAQ list."
 msgstr "Добавить вопрос и ответ в список FAQ."
 
-#: faq.module:164,151,159,146,168,181,171,184,154,167,155
+#: faq.module:187
 msgid "FAQ"
 msgstr "FAQ"
 
-#: faq.module:153,148,170,173,156,157
+#: faq.module:189
 msgid "A frequently asked question and its answer."
 msgstr ""
 "Часто задаваемый вопрос и ответ на "
 "него."
 
-#: faq.module:189,184,206,209,192
-msgid "Question to be answered"
-msgstr "Вопрос и ответ"
-
-#: faq.module:155,150,172,175,158,159
+#: faq.module:191
 msgid "Answer"
 msgstr "Ответ"
 
-#: faq.module:194,189,211,214,197,207,206,200
+#: faq.module:232
 msgid ""
 "This is that answer to the question.  It will be filtered according to "
 "the input format."
@@ -125,52 +110,52 @@ msgstr ""
 "Это ответ на вопрос. Его формат будет "
 "соответствовать входному формату."
 
-#: faq.info:0; faq.module:316,86,78,71,793,337,88,95,103,340,91,98,106,301,74,81,89,304,328,332,331,90,325
+#: faq.module:357,74,103,134; faq.info:0
 msgid "Frequently Asked Questions"
 msgstr "Часто задаваемые Вопросы"
 
-#: faq.module:332; faq.admin.inc:42
+#: faq.admin.inc:42
 msgid "FAQ Description"
-msgstr "Описание ЧаВо"
+msgstr "Описание FAQ"
 
-#: faq.module:334; faq.admin.inc:44
+#: faq.admin.inc:44
 msgid ""
 "Your FAQ description.  This will be placed at the top of the page, "
 "above the questions and can serve as an introductory text."
 msgstr ""
-"Описание ваших FAQ. Оно будет размещено "
-"в верхней части страницы над "
-"вопросами и может служить в качестве "
-"вводного текста."
+"Описание вашего FAQ. Оно будет "
+"размещено в верхней части страницы "
+"над вопросами и может служить в "
+"качестве вводного текста."
 
-#: faq.module:359; faq.admin.inc:69
+#: faq.admin.inc:64
 msgid "Questions inline"
 msgstr "Действующие в линию"
 
-#: faq.module:360; faq.admin.inc:70
+#: faq.admin.inc:65
 msgid "Clicking on question takes user to answer further down the page"
 msgstr ""
 "Нажатие на вопрос покажет ответ ниже "
 "на странице"
 
-#: faq.module:361; faq.admin.inc:71
+#: faq.admin.inc:66
 msgid "Clicking on question opens/hides answer under question"
 msgstr ""
 "Нажатие на вопрос "
 "открывается/скрывается ответ под "
 "вопросом"
 
-#: faq.module:362; faq.admin.inc:72
+#: faq.admin.inc:67
 msgid "Clicking on question opens the answer in a new page"
 msgstr ""
 "Нажатие на вопрос открывается ответ в "
 "на новой странице"
 
-#: faq.module:367; faq.admin.inc:77
+#: faq.admin.inc:72
 msgid "Page layout"
 msgstr "Макет страницы"
 
-#: faq.module:368; faq.admin.inc:78
+#: faq.admin.inc:73
 msgid ""
 "This controls how the questions and answers are displayed on the page "
 "and what happens when someone clicks on the question."
@@ -180,15 +165,15 @@ msgstr ""
 "странице и что случается, когда кто-то "
 "нажимает на вопрос."
 
-#: faq.module:485,374; faq.admin.inc:195,84,203
+#: faq.admin.inc:79,215
 msgid "Miscellaneous layout settings"
 msgstr "Разные форматы настроек"
 
-#: faq.module:381; faq.admin.inc:91
+#: faq.admin.inc:86
 msgid "Questions listing style"
 msgstr "Стиль списка вопросов"
 
-#: faq.module:382; faq.admin.inc:92
+#: faq.admin.inc:87
 msgid ""
 "This allows to select how the questions listing is presented.  It only "
 "applies to the layouts: 'Clicking on question takes user to answer "
@@ -204,57 +189,57 @@ msgstr ""
 "и 'Нажатие на вопрос открывает вопрос "
 "в новом окне'. В упорядоченном списке "
 "будут номера вопросов, а в "
-"неупорядоченном списке -- буллет слева "
+"неупорядоченном списке — булет слева "
 "от каждого вопроса."
 
-#: faq.module:388; faq.admin.inc:98
+#: faq.admin.inc:93
 msgid "Label questions and answers"
 msgstr "Обозначение вопросов и ответов"
 
-#: faq.module:389; faq.admin.inc:99
+#: faq.admin.inc:94
 msgid ""
 "This option is only valid for the \"Questions Inline\" layout.  It "
 "labels all questions on the faq page with the \"question label\" "
 "setting and all answers with the \"answer label\" setting.  For "
 "example these could be set to \"Q:\" and \"A:\"."
 msgstr ""
-"Эта опция доступна только для \"Списка "
-"вопросов\" уровня. Метка всех вопросов "
+"Эта опция доступна только для «Списка "
+"вопросов» уровня. Метка всех вопросов "
 "и ответов. Для примера вы можете "
-"установить их в \"Q:\" и \"A:\"."
+"установить их в «Q:» и «A:»."
 
-#: faq.module:395; faq.admin.inc:105
+#: faq.admin.inc:100
 msgid "Question Label"
 msgstr "Обозначение вопроса"
 
-#: faq.module:396; faq.admin.inc:106
+#: faq.admin.inc:101
 msgid ""
 "The label to pre-pend to the question text in the \"Questions Inline\" "
 "layout if labelling is enabled."
 msgstr ""
 "Когда используется компоновка "
-"&#132;Вопросы в линию&#147; можно указать "
+"«Вопросы в линию» можно указать "
 "собственную подпись перед вопросом."
 
-#: faq.module:402; faq.admin.inc:112
+#: faq.admin.inc:107
 msgid "Answer Label"
 msgstr "Обозначение ответа"
 
-#: faq.module:403; faq.admin.inc:113
+#: faq.admin.inc:108
 msgid ""
 "The label to pre-pend to the answer text in the \"Questions Inline\" "
 "layout if labelling is enabled."
 msgstr ""
 "Когда используется компоновка "
-"&#132;Вопросы в линию&#147; можно указать "
+"«Вопросы в линию» можно указать "
 "собственную подпись перед ответом на "
 "вопрос."
 
-#: faq.module:409; faq.admin.inc:119,127
+#: faq.admin.inc:136
 msgid "Use answer teaser"
 msgstr "Использовать анонсы ответов"
 
-#: faq.module:410; faq.admin.inc:120,128
+#: faq.admin.inc:137
 msgid ""
 "This enables the display of the answer teaser text instead of the full "
 "answer when using the 'Questions inline' or 'Clicking on question "
@@ -271,11 +256,11 @@ msgstr ""
 "текст. Пользователь может видеть "
 "полный ответ, нажимая на вопрос."
 
-#: faq.module:423; faq.admin.inc:133,141
+#: faq.admin.inc:150
 msgid "\"Back to Top\" link text"
 msgstr "Текст ссылки „Вернуться Назад“"
 
-#: faq.module:424; faq.admin.inc:134,142
+#: faq.admin.inc:151
 msgid ""
 "This allows the user to change the text displayed for the links which "
 "return the user to the top of the page on certain page layouts.  "
@@ -287,7 +272,7 @@ msgstr ""
 "\"Вернуться Назад\".  Оставьте пустой, "
 "если не хотите менять ссылку."
 
-#: faq.module:454; faq.admin.inc:164,172
+#: faq.admin.inc:181
 msgid ""
 "Categorization of questions will not work without the \"taxonomy\" "
 "module being enabled."
@@ -296,11 +281,11 @@ msgstr ""
 "работать без включенного модуля "
 "\"Таксономия\"."
 
-#: faq.module:466; faq.admin.inc:176,184
+#: faq.admin.inc:195
 msgid "Categorize questions"
 msgstr "Категоризировать вопросы"
 
-#: faq.module:467; faq.admin.inc:177,185
+#: faq.admin.inc:196
 msgid ""
 "This allows the user to display the questions according to the "
 "categories configured on the add/edit FAQ page.  Use of sub-categories "
@@ -316,32 +301,32 @@ msgstr ""
 "списков вопросов. Модуль Таксономии "
 "должен быть включен."
 
-#: faq.module:471; faq.admin.inc:181,189
+#: faq.admin.inc:201
 msgid "Categories inline"
 msgstr "Встроенные категории"
 
-#: faq.module:472; faq.admin.inc:182,190
+#: faq.admin.inc:202
 msgid "Clicking on category opens/hides questions and answers under category"
 msgstr ""
 "Нажатие на категорию "
 "открывает/скрывает вопросы и ответы, "
 "находящиеся под ней."
 
-#: faq.module:473; faq.admin.inc:183,191
+#: faq.admin.inc:203
 msgid "Clicking on category opens the questions/answers in a new page"
 msgstr ""
 "Нажатие на категорию откроет "
 "вопросы/ответы на новой странице"
 
-#: faq.module:478; faq.admin.inc:188,196
+#: faq.admin.inc:208
 msgid "Categories layout"
 msgstr "Расположение категорий"
 
-#: faq.module:492; faq.admin.inc:202,210
+#: faq.admin.inc:222
 msgid "Categories listing style"
 msgstr "Стиль списка категорий"
 
-#: faq.module:493; faq.admin.inc:203,211
+#: faq.admin.inc:223
 msgid ""
 "This allows to select how the categories listing is presented.  It "
 "only applies to the 'Clicking on category opens the questions/answers "
@@ -358,11 +343,11 @@ msgstr ""
 "неупорядоченном списке -- буллет слева "
 "от каждого вопроса."
 
-#: faq.module:499; faq.admin.inc:209,217
+#: faq.admin.inc:236
 msgid "Show FAQ count"
 msgstr "Отображать подсчет ЧаВо"
 
-#: faq.module:500; faq.admin.inc:210,218
+#: faq.admin.inc:237
 msgid ""
 "This displays the number of questions in a category after the category "
 "name."
@@ -370,13 +355,13 @@ msgstr ""
 "Отображает число вопросов в категории "
 "после названия категории."
 
-#: faq.module:506; faq.admin.inc:216,224
+#: faq.admin.inc:243
 msgid "Display category name for answers"
 msgstr ""
 "Отображает название категории для "
 "ответов"
 
-#: faq.module:507; faq.admin.inc:217,225
+#: faq.admin.inc:244
 msgid ""
 "This allows the user to toggle the visibility of the category name "
 "above each answer section for the 'Clicking on question takes user to "
@@ -389,13 +374,13 @@ msgstr ""
 "вопрос покажет ответ ниже на "
 "странице'."
 
-#: faq.module:513; faq.admin.inc:223,231
+#: faq.admin.inc:250
 msgid "Group questions and answers for 'Categories inline'"
 msgstr ""
 "Группа вопросов и ответов для "
 "'Встроенных категорий'."
 
-#: faq.module:514; faq.admin.inc:224,232
+#: faq.admin.inc:251
 msgid ""
 "This controls how categories are implemented with the 'Clicking on "
 "question takes user to answer further down the page' question/answer "
@@ -406,13 +391,13 @@ msgstr ""
 "показа: 'Нажатие на вопрос покажет "
 "ответ ниже на странице'."
 
-#: faq.module:520; faq.admin.inc:230,238
+#: faq.admin.inc:257
 msgid "Only show sub-categories when parent category is selected"
 msgstr ""
 "Показывать только субкатегории при "
 "выборе родительской категории"
 
-#: faq.module:521; faq.admin.inc:231,239
+#: faq.admin.inc:258
 msgid ""
 "This allows the user more control over how and when sub-categories are "
 "displayed.  It does not affect the 'Categories inline' display."
@@ -423,13 +408,13 @@ msgstr ""
 "Неэффективно при отображении "
 "'Встроенные категории'."
 
-#: faq.module:527; faq.admin.inc:237,245
+#: faq.admin.inc:264
 msgid "Show sub-categories on FAQ category pages"
 msgstr ""
 "Отображать субкатегории в ЧаВо на "
 "страницах категорий"
 
-#: faq.module:528; faq.admin.inc:238,246
+#: faq.admin.inc:265
 msgid ""
 "Sub-categories with 'faq' nodes will be displayed on the per category "
 "FAQ page.  This will also happen if 'Only show sub-categories when "
@@ -442,67 +427,49 @@ msgstr ""
 "субкатегории при выборе родительской "
 "категории'."
 
-#: faq.module:600; faq.admin.inc:310,312,319,327
+#: faq.admin.inc:348
 msgid "Choose a category"
 msgstr "Выбрать категорию"
 
-#: faq.module:601; faq.admin.inc:311,313,320,328
+#: faq.admin.inc:349
 msgid "Choose a category that you wish to order the questions for."
 msgstr ""
 "Выбрать категорию, в которой вы "
 "желаете упорядочить вопросы."
 
-#: faq.module:681; faq.admin.inc:391,393,400,403,411
-msgid "Question Order"
-msgstr "Порядок следования вопросов"
-
-#: faq.module:682; faq.admin.inc:392,394,401,404,412
-msgid ""
-"This determines the order of the questions and answers on the FAQ "
-"page.  Just select one or more questions and use the arrows to change "
-"their position in the list.  You can also order the list by the "
-"question creation date !desc or !asc."
-msgstr ""
-"Определяет порядок вопросов и ответов "
-"на FAQ странице.  Выберите один или "
-"более вопрос и стрелками измените его "
-"позицию в списке. Вы, также, можете  "
-"сортировать список вопросов по дате "
-"создания !desc или !asc."
-
-#: faq.module:775,728; faq.admin.inc:485,438,440,487,447,494,450,497,458,505
+#: faq.admin.inc:480
 msgid "Configuration has been updated."
 msgstr "Конфигурация была обновлена."
 
-#: faq.module:316,793,337,340,301,304,328,332,331,325
+#: faq.module:357
 msgid "Back to Top"
 msgstr "Обратно вверх"
 
-#: faq.module:316,793,337,340,301,304,328,332,331,325
+#: faq.module:357
 msgid "Q:"
 msgstr "В:"
 
-#: faq.module:316,793,337,340,301,304,328,332,331,325
+#: faq.module:357
 msgid "A:"
 msgstr "О:"
 
-#: faq.module:668,645,1749,1726,673,696,676,699,627,652,630,655,654,679,667,692,666,691,693,661,686
+#: faq.module:702,727
 msgid "FAQ Categories"
 msgstr "Категори FAQ"
 
-#: faq.module:682,646,1763,1727,674,710,677,713,628,666,631,669,655,693,668,706,667,705,707,662,700
+#: faq.module:703,741
 msgid "Recent FAQs"
 msgstr "Недавние FAQ"
 
-#: faq.module:688,647,1769,1728,675,716,678,719,629,672,632,656,699,669,712,668,711,670,713,663,706
+#: faq.module:704,747
 msgid "Random FAQs"
 msgstr "Случайный FAQ"
 
-#: faq.module:716,706,1797,1787,734,744,737,747,690,700,693,703,717,727,730,740,729,739,731,741,724
+#: faq.module:765,775
 msgid "Number of FAQs to show"
 msgstr "Количество FAQ для показа"
 
-#: faq.module:707,1788,735,738,691,694,718,731,730,732,725
+#: faq.module:766
 msgid ""
 "This controls the number of FAQs that appear in the 'Recent FAQs' "
 "block"
@@ -510,7 +477,7 @@ msgstr ""
 "Управляет количеством FAQ вопросов в "
 "блоке 'Последние FAQ'"
 
-#: faq.module:717,1798,745,748,701,704,728,741,740,742,735
+#: faq.module:776
 msgid ""
 "This controls the number of FAQs that appear in the 'Random FAQs' "
 "block"
@@ -518,17 +485,13 @@ msgstr ""
 "Контроль за количеством FAQ, "
 "отображеамых в 'Случайный FAQ' блоке"
 
-#: faq.module:793,766,1874,1847,794,821,797,824,750,777,753,780,804,790,817,789,816,796,829,830,823
+#: faq.module:831,864
 msgid "All FAQs"
 msgstr "Все FAQ"
 
 #: faq.module:36
 msgid "administer faq"
 msgstr "управлять ЧаВо"
-
-#: faq.module:36
-msgid "view faq"
-msgstr "просмотр ЧаВо"
 
 #: faq.module:36
 msgid "edit own faq"
@@ -542,11 +505,11 @@ msgstr "редактировать ЧаВо"
 msgid "create faq"
 msgstr "создать ЧаВо"
 
-#: faq.module:94,93,111,114,97,98
+#: faq.module:142
 msgid "General"
 msgstr "Общие"
 
-#: faq.module:95,94,112,115,98,99
+#: faq.module:143
 msgid ""
 "Allows the user to configure the header and descriptive text for the "
 "FAQ page."
@@ -555,11 +518,11 @@ msgstr ""
 "заголовок и текст описания для "
 "страницы ЧаВо."
 
-#: faq.module:105,103,122,125,108,109
+#: faq.module:153
 msgid "Questions"
 msgstr "Вопросы"
 
-#: faq.module:117,114,134,137,120,121
+#: faq.module:165
 msgid ""
 "Allows the user to configure the layout of questions and answers using "
 "categories on a FAQ page."
@@ -569,7 +532,7 @@ msgstr ""
 "использованием категорий на странице "
 "ЧаВо."
 
-#: faq.module:128,124,145,148,131,132
+#: faq.module:92,123
 msgid ""
 "Allows the user to configure the order of questions and answers on a "
 "FAQ page."
@@ -584,106 +547,37 @@ msgstr ""
 "Управляет конфигурацией вопросов для "
 "страницы FAQ."
 
-#: faq.module:19
-msgid ""
-"This module allows users with the 'administer faq' permission to "
-"create question and answer pairs which will be displayed on the 'faq' "
-"page.  The 'faq' page is automatically generated from the FAQ nodes "
-"configured and the layout of this page can be modified on the settings "
-"page.  Users will need the 'view faq' permission in order to view the "
-"'faq' page."
-msgstr ""
-"Модуль позволяет пользователям с "
-"правом 'управлять ЧаВо' создавать пары "
-"вопрос-ответ, которые отображаются на "
-"странице 'faq'. Эта страница "
-"автоматически генерируется из "
-"материалов модуля, а её внешний вид "
-"можно изменить на странице настроек. "
-"Пользователям нужны права 'просмотр "
-"ЧаВо' для доступа к странице 'faq'."
+#: faq.admin.inc:200
+msgid "Don't display"
+msgstr "Не отображать"
 
-#: faq.install:131,29,20,137,138,136
-msgid "The primary identifier for a node."
-msgstr "Основной идентификатор материала."
-
-#: faq.module:0
-msgid "faq"
-msgstr "faq"
-
-#: faq.module:756,702; faq.admin.inc:466,412,414,468,421,475,424,478,432,486
+#: faq.admin.inc:424,458
 msgid "Save order"
 msgstr "Сохранить порядок"
 
-#: faq.module:534; faq.admin.inc:244,245,253
+#: faq.admin.inc:272
 msgid "Advanced category settings"
 msgstr "Расширенные настройки категорий"
 
-#: faq.module:546; faq.admin.inc:256,257,265
+#: faq.admin.inc:284
 msgid "Omit vocabulary"
 msgstr "Не включать словари"
 
-#: faq.module:547; faq.admin.inc:257,258,266
-msgid "Terms from these vocabularies will be excluded from the FAQ pages."
-msgstr ""
-"Термины этих словарей будут исключены "
-"из FAQ-страниц."
-
-#: faq.module:491,380; faq.admin.inc:201,90,209
+#: faq.admin.inc:85,221
 msgid "Unordered list"
-msgstr "Неупорядоченный список"
+msgstr "Ненумерованный список"
 
-#: faq.module:491,380; faq.admin.inc:201,90,209
+#: faq.admin.inc:85,221
 msgid "Ordered list"
-msgstr "Упорядоченный список"
+msgstr "Нумерованный список"
 
-#: faq.install:105,17,108,109,110
-msgid "A table containing the weight of each faq node by category."
-msgstr ""
-"Таблица, которая содержит вес каждого "
-"материала вопроса в категории."
-
-#: faq.install:19
-msgid ""
-"The primary identifier for a term or category.  This will be 0 for "
-"non-categorized nodes."
-msgstr ""
-"Основной идентификатор термина или "
-"категории. Это будет 0 для материалов "
-"без категории."
-
-#: faq.install:21
-msgid ""
-"A number representing the weight of a node.  Nodes with lower weight "
-"values will appear above those with higher weight values."
-msgstr ""
-"Число представляющее вес материала. "
-"Материалы с большим весом будут "
-"расположены ниже в списке."
-
-#: faq.install:129,27,135,136,134
-msgid "A table containing the long question text of each faq node revision."
-msgstr ""
-"Таблица, содержащая длинный текст "
-"каждого FAQ вопроса."
-
-#: faq.install:132,30,138,139,137
-msgid "The primary identifier for a node revision."
-msgstr ""
-"Основной идентификатор для версии "
-"материала."
-
-#: faq.install:133,31,139,140,138,32
-msgid "The faq long question text."
-msgstr "Текст вопроса."
-
-#: faq.module:430; faq.admin.inc:140,148
+#: faq.admin.inc:157
 msgid "Disable question links to nodes"
 msgstr ""
 "Отключить ссылки на страницу "
 "материала"
 
-#: faq.module:431; faq.admin.inc:141,149
+#: faq.admin.inc:158
 msgid ""
 "This allows the user to prevent the questions being links to the faq "
 "node in all layouts except \"Clicking on question opens the answer in "
@@ -700,7 +594,7 @@ msgstr ""
 "&#132;Ответы размещаются на отдельной "
 "странице&#147;."
 
-#: faq.module:479; faq.admin.inc:189,197
+#: faq.admin.inc:209
 msgid ""
 "This controls how the categories are displayed on the page and what "
 "happens when someone clicks on the category."
@@ -708,49 +602,38 @@ msgstr ""
 "Настройка отображения и поведения "
 "категорий при нажатии на них."
 
-#: faq.module:437; faq.admin.inc:147,155
-msgid "Default Sorting for Non-Weighted FAQs"
-msgstr "Порядок сортировки по умолчанию"
-
-#: faq.module:438; faq.admin.inc:148,156
+#: faq.admin.inc:165
 msgid "Date Descending"
 msgstr "по дате по убыванию"
 
-#: faq.module:438; faq.admin.inc:148,156
+#: faq.admin.inc:165
 msgid "Date Ascending"
 msgstr "по дате по возрастанию"
 
-#: faq.module:439; faq.admin.inc:149,157
-msgid ""
-"This controls the default weighting behaviour for new FAQ nodes which "
-"haven't been assigned a weight."
-msgstr ""
-"Настройка поведения вновь созданных "
-"вопросов для которых не указан вес."
-
-#: faq.module:416; faq.admin.inc:126,134
+#: faq.admin.inc:143
 msgid "Show node links"
 msgstr "Показывать ссылки материалов"
 
-#: faq.module:417; faq.admin.inc:127,135
+#: faq.admin.inc:144
 msgid ""
 "This enables the display of links under the answer text on the faq "
 "page.  Examples of these links include \"Read more\", \"Add comment\"."
 msgstr ""
 "Включает отображение ссылок "
 "материала под текстом ответа на "
-"странице &#132;Часто задаваемые "
-"вопросы&#147;."
+"странице «Часто задаваемые вопросы». "
+"Например эти ссылки включают «Читать "
+"дальше», «Добавить комментарий»."
 
-#: faq.module:1090,2171,1125,1136,1139,1096,1099,1123,1135,1137,1155,1156,1149
+#: faq.module:1195
 msgid "Go back to the top of the page."
 msgstr "Вернуться наверх страницы."
 
-#: faq.module:1225,1236,1239,1196,1199,1223,1238,1237,1257,1258,1251
+#: faq.module:1297
 msgid "FAQ category path settings"
 msgstr "Настройки пути для категорий вопросов"
 
-#: faq.module:1226,1237,1240,1197,1200,1224,1239,1238,1258,1259,1252
+#: faq.module:1298
 msgid ""
 "Default path pattern (applies to all FAQ categories with blank "
 "patterns below)"
@@ -758,21 +641,21 @@ msgstr ""
 "Путь по умолчанию (применяется ко всем "
 "категориям FAQ с пустыми полями)"
 
-#: faq.module:1227,1238,1241,1198,1201,1225,1240,1239,1259,1260,1253
+#: faq.module:1299
 msgid "faq/[catpath-raw]"
 msgstr "faq/[catpath-raw]"
 
-#: faq.module:1097,1099,1100,1102,1057,1059,1060,1062,1084,1086,1096,1098,1114,1116,1115,1117,1108,1110
+#: faq.module:1153,1156
 msgid "Edit answer"
 msgstr "Редактировать ответ"
 
-#: faq.admin.inc:266,274
+#: faq.admin.inc:293
 msgid "Enable FAQ taxonomy links"
 msgstr ""
 "Разрешить FAQ подменять ссылки "
 "терминов"
 
-#: faq.admin.inc:267,275
+#: faq.admin.inc:294
 msgid ""
 "Node links to taxonomy terms will be re-written to point at the FAQ "
 "pages instead."
@@ -815,27 +698,19 @@ msgstr ""
 msgid "view faq page"
 msgstr "видеть страницу ЧаВо"
 
-#: faq.admin.inc:398,406
-msgid "ascending"
-msgstr "возрастание"
-
-#: faq.admin.inc:399,407
-msgid "descending"
-msgstr "убывание"
-
-#: faq.admin.inc:119
+#: faq.admin.inc:114
 msgid "Question length"
 msgstr "Длина вопроса"
 
-#: faq.admin.inc:120
+#: faq.admin.inc:115
 msgid "Display longer text"
 msgstr "Отображать полный текст"
 
-#: faq.admin.inc:120
+#: faq.admin.inc:115
 msgid "Display both short and long questions"
 msgstr "Отображать оба полный и краткий текст"
 
-#: faq.admin.inc:121
+#: faq.admin.inc:116
 msgid ""
 "The length of question text to display on the FAQ page.  The short "
 "question will always be displayed in the FAQ blocks."
@@ -844,20 +719,20 @@ msgstr ""
 "на страницах. Краткий вопрос всегда "
 "отображается в блоках."
 
-#: faq.module:191,192,185
+#: faq.module:217
 msgid ""
 "Question to be answered.  This will appear in all question listings, "
 "such as the FAQ blocks."
 msgstr ""
 "Вопрос без ответа. Будет опубликован "
-"среди всех вопрос в списке блока таких "
-"FAQ не отвеченные вопросы."
+"среди всех списков вопросов, таких как "
+"блоки FAQ."
 
-#: faq.module:197,198,191
+#: faq.module:223
 msgid "Question details (optional)"
 msgstr "Подробности вопроса (необязательно)"
 
-#: faq.module:202,201,195
+#: faq.module:227
 msgid ""
 "Longer question text.  This will be displayed in all layouts where the "
 "answer appears, in addition to the shorter question text."
@@ -867,11 +742,125 @@ msgstr ""
 "ответ в дополнение к краткому тексту "
 "вопроса."
 
-#: faq.install:31
-msgid "The faq short question text."
-msgstr "Краткий текст FAQ."
-
-#: faq.admin.inc:120
+#: faq.admin.inc:115
 msgid "Display short text"
 msgstr "Отображать краткий текст"
+
+#: faq.module:1370
+msgid "Embed FAQ page"
+msgstr "Встроить страницу с FAQ"
+
+#: faq.module:1382
+msgid ""
+"Embed FAQ page using [faq] type tags.  Disables filter caching so not "
+"recommended for all input formats."
+msgstr ""
+"Встроить страницу с FAQ, используя [faq] "
+"типы тэгов.\r\n"
+"Отключает кеширование фильтра, "
+"поэтому не рекомендуется для всех "
+"форматов ввода."
+
+#: faq.module:1406
+msgid ""
+"[faq] or [faq:123,questions_inline,categories_inline] - insert FAQ "
+"content based on the optional category, question style and category "
+"style."
+msgstr ""
+"[faq] or [faq:123,questions_inline,categories_inline] - "
+"Вставить содержимое FAQ на основе "
+"произвольных категории, стиля вопроса "
+"и стиля категории"
+
+#: faq.admin.inc:285
+msgid ""
+"Terms from these vocabularies will be <em>excluded</em> from the FAQ "
+"pages."
+msgstr ""
+"Термины этого словаря могут быть "
+"<em>исключены</em> из страниц FAQ."
+
+#: faq.admin.inc:122
+msgid "Use accordion effect for \"opens/hides answer under question\" layout"
+msgstr ""
+"Использование эффекта аккордеона для "
+"вывода\"открытия/скрытия ответов под "
+"вопросами\""
+
+#: faq.admin.inc:123
+msgid ""
+"This enables an \"accordion\" style effect where when a question is "
+"clicked, the answer appears beneath, and is then hidden when another "
+"question is opened."
+msgstr ""
+"Это позволяет \"аккордеон\" эффект, при "
+"нажатии на вопрос, ответ появится "
+"внизу, затем, скрытие при открытии "
+"другого вопроса."
+
+#: faq.admin.inc:229
+msgid ""
+"Use accordion effect for \"opens/hides questions and answers under "
+"category\" layout"
+msgstr ""
+"Использовать эффект аккордеона для "
+"\"открыть/скрыть вопросов и ответов "
+"под категориями\""
+
+#: faq.admin.inc:230
+msgid ""
+"This enables an \"accordion\" style effect where when a category is "
+"clicked, the questions appears beneath, and is then hidden when "
+"another category is opened."
+msgstr ""
+"Это позволяет использовать "
+"\"аккордеон\" эффект, при нажатии на "
+"категорию вопросов ниже, а затем они "
+"скрываются, при открытии другой "
+"категории."
+
+#: faq.admin.inc:129
+msgid "Show \"expand / collapse all\" links for collapsed questions"
+msgstr ""
+"Показать \"развернуть / свернуть всё\" "
+"ссылки для свёрнутых вопросов"
+
+#: faq.admin.inc:130
+msgid ""
+"The links will only be displayed if using the \"opens/hides answer "
+"under question\" or \"opens/hides questions and answers under "
+"category\" layouts."
+msgstr ""
+"Ссылки будут отображаться только при "
+"использовании \"открыть/скрыть ответ "
+"на вопрос\" или \"открыть/скрыть "
+"категории вопросов и ответов по "
+"категории\"."
+
+#: faq.admin.inc:166
+msgid ""
+"This controls the default ordering behaviour for new FAQ nodes which "
+"haven't been assigned a position."
+msgstr ""
+"Это контролирует поведение по "
+"умолчанию для новых материалов FAQ, "
+"которым не была назначена позиция."
+
+#: faq.module:1445
+msgid "expand all"
+msgstr "развернуть все"
+
+#: faq.module:1446
+msgid "collapse all"
+msgstr "свернуть всё"
+
+#: faq.module:36
+msgid "administer faq order"
+msgstr "управление порядком faq"
+
+#: faq.admin.inc:164
+msgid "Default sorting for unordered FAQs"
+msgstr ""
+"Сортировка по умолчанию для "
+"неупорядоченных FAQ"
 

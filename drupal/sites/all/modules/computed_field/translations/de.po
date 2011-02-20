@@ -1,4 +1,4 @@
-# $Id: de.po,v 1.1.2.3 2008/10/07 16:52:38 moonshine Exp $
+# $Id: de.po,v 1.1.2.4 2010/10/12 23:34:00 moonshine Exp $
 #
 # German translation of Drupal (general)
 # Copyright 2008 <dvc@drupalcenter.de>

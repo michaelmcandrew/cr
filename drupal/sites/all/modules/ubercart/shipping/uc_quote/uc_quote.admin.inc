@@ -1,12 +1,14 @@
 <?php
-// $Id: uc_quote.admin.inc,v 1.1.2.8 2009/02/10 21:58:13 islandusurper Exp $
+// $Id: uc_quote.admin.inc,v 1.1.2.11 2010/07/12 01:57:35 tr Exp $
 
 /**
  * @file
  * Shipping quotes administration menu items.
  */
 
-// Displays an overview of the shipping quote settings.
+/**
+ * Display an overview of the shipping quote settings.
+ */
 function uc_quote_overview() {
   $summaries = array();
 
@@ -136,7 +138,7 @@ function uc_quote_admin_settings() {
 }
 
 /**
- * Submit function for uc_quote_admin_settings() in lieu of system_settings_form().
+ * @see uc_quote_admin_settings()
  */
 function uc_quote_admin_settings_submit($form, &$form_state) {
   $address = new stdClass();
@@ -169,9 +171,10 @@ function uc_quote_admin_settings_submit($form, &$form_state) {
  * Enable and reorder shipping quote methods. Set the default shipping type.
  *
  * @ingroup forms
- * @see theme_uc_quote_method_settings()
- * @see uc_quote_method_settings_validate()
- * @see uc_quote_method_settings_submit()
+ * @see
+ *   theme_uc_quote_method_settings()
+ *   uc_quote_method_settings_validate()
+ *   uc_quote_method_settings_submit()
  */
 function uc_quote_method_settings() {
   $form = array();
@@ -207,7 +210,7 @@ function uc_quote_method_settings() {
   if (is_array($shipping_types)) {
     $form['uc_quote_type_weight'] = array('#type' => 'fieldset',
       '#title' => t('List position'),
-      '#description' => t('Determines which shipping methods are quoted at checkout when products of different shipping types are ordered. Smaller positions are chosen first.'),
+      '#description' => t('Determines which shipping methods are quoted at checkout when products of different shipping types are ordered. Larger values take precedence.'),
       '#collapsible' => TRUE,
       '#summary callback' => 'summarize_null',
       '#tree' => TRUE,
@@ -219,7 +222,8 @@ function uc_quote_method_settings() {
       $method_types[$method['quote']['type']][] = $method['title'];
     }
     if (is_array($method_types['order'])) {
-      $form['uc_quote_type_weight']['#description'] .= t('<br />The %list methods are compatible with any shipping type.', array('%list' => implode(', ', $method_types['order'])));
+      $count = count($method_types['order']);
+      $form['uc_quote_type_weight']['#description'] .= format_plural($count, '<br />The %list method is compatible with any shipping type.', '<br />The %list methods are compatible with any shipping type.', array('%list' => implode(', ', $method_types['order'])));
     }
     foreach ($shipping_types as $id => $title) {
       $form['uc_quote_type_weight'][$id] = array('#type' => 'weight',
@@ -266,9 +270,9 @@ function theme_uc_quote_method_settings($form) {
 }
 
 /**
- * Validation handler for uc_quote_method_settings().
+ * Require at least one enabled shipping method.
  *
- * Must enable at least one shipping method.
+ * @see uc_quote_method_settings()
  */
 function uc_quote_method_settings_validate($form, &$form_state) {
   $none_enabled = TRUE;
@@ -285,7 +289,7 @@ function uc_quote_method_settings_validate($form, &$form_state) {
 }
 
 /**
- * Submit handler for uc_quote_method_settings().
+ * @see uc_quote_method_settings()
  */
 function uc_quote_method_settings_submit($form, &$form_state) {
   $enabled = array();
@@ -301,4 +305,3 @@ function uc_quote_method_settings_submit($form, &$form_state) {
   variable_set('uc_store_shipping_type', $form_state['values']['uc_store_shipping_type']);
   drupal_set_message(t('The configuration options have been saved.'));
 }
-

@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_2checkout.module,v 1.6.2.6 2009/04/18 07:29:19 islandusurper Exp $
+// $Id: uc_2checkout.module,v 1.6.2.13 2010/08/11 17:52:20 islandusurper Exp $
 
 /**
  * @file
@@ -11,16 +11,11 @@
  * Implementation of hook_menu().
  */
 function uc_2checkout_menu() {
+  $items = array();
+
   $items['cart/2checkout/complete'] = array(
     'title' => 'Order complete',
     'page callback' => 'uc_2checkout_complete',
-    'access callback' => 'uc_2checkout_completion_access',
-    'type' => MENU_CALLBACK,
-    'file' => 'uc_2checkout.pages.inc',
-  );
-  $items['cart/2checkout/finalize'] = array(
-    'title' => 'Order complete',
-    'page callback' => 'uc_2checkout_finalize',
     'access callback' => 'uc_2checkout_completion_access',
     'type' => MENU_CALLBACK,
     'file' => 'uc_2checkout.pages.inc',
@@ -29,7 +24,18 @@ function uc_2checkout_menu() {
   return $items;
 }
 
-// Make sure anyone can complete their 2Checkout orders.
+/**
+ * Implementation of hook_init().
+ */
+function uc_2checkout_init() {
+  global $conf;
+  $conf['i18n_variables'][] = 'uc_2checkout_method_title';
+  $conf['i18n_variables'][] = 'uc_2checkout_checkout_button';
+}
+
+/**
+ * Make sure anyone can complete their 2Checkout orders.
+ */
 function uc_2checkout_completion_access() {
   return TRUE;
 }
@@ -48,13 +54,14 @@ function uc_2checkout_ucga_display() {
 /**
  * Implementation of hook_form_alter().
  */
-function uc_2checkout_form_alter(&$form, &$form_state, $form_id) {
+function uc_2checkout_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
     $order = uc_order_load($order_id);
 
     if ($order->payment_method == '2checkout') {
+      drupal_add_css(drupal_get_path('module', 'uc_2checkout') .'/uc_2checkout.css');
       unset($form['submit']);
-      $form['#prefix'] = '<table style="display: inline; padding-top: 1em;"><tr><td>';
+      $form['#prefix'] = '<table id="two-checkout-review-table"><tr><td>';
       $form['#suffix'] = '</td><td>'. drupal_get_form('uc_2checkout_form', $order) .'</td></tr></table>';
     }
   }
@@ -62,11 +69,13 @@ function uc_2checkout_form_alter(&$form, &$form_state, $form_id) {
 
 /**
  * Implementation of hook_payment_method().
+ *
+ * @see uc_payment_method_2checkout()
  */
 function uc_2checkout_payment_method() {
   $path = base_path() . drupal_get_path('module', 'uc_2checkout');
   $title = variable_get('uc_2checkout_method_title', t('Credit card on a secure server:'));
-  $title .= '<br /><img src="'. $path .'/2cocc05.gif" style="position: relative; left: 2.5em;">';
+  $title .= '<br /><img src="'. $path .'/2cocc05.gif" style="position: relative; left: 2.5em;" />';
 
   $methods[] = array(
     'id' => '2checkout',
@@ -84,7 +93,11 @@ function uc_2checkout_payment_method() {
 }
 
 
-// Adds 2Checkout settings to the payment method settings form.
+/**
+ * Add 2Checkout settings to the payment method settings form.
+ *
+ * @see uc_2checkout_payment_method()
+ */
 function uc_payment_method_2checkout($op, &$arg1) {
   switch ($op) {
     case 'cart-details':
@@ -172,7 +185,9 @@ function uc_payment_method_2checkout($op, &$arg1) {
   }
 }
 
-// Form to build the submission to 2Checkout.com.
+/**
+ * Form to build the submission to 2Checkout.com.
+ */
 function uc_2checkout_form($form_state, $order) {
   $country = uc_get_country_data(array('country_id' => $order->billing_country));
   if ($country === FALSE) {
@@ -181,7 +196,10 @@ function uc_2checkout_form($form_state, $order) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => '2checkout-form',
+    'type' => 'order_total',
+    'subject' => array(
+      'order' => $order,
+    ),
   );
   $options = array(
     'sign' => FALSE,
@@ -212,6 +230,7 @@ function uc_2checkout_form($form_state, $order) {
   );
 
   $i = 0;
+  $context['type'] = 'order_product';
   foreach ($order->products as $product) {
     $i++;
     $data['c_prod_'. $i] = $product->model .','. $product->qty;

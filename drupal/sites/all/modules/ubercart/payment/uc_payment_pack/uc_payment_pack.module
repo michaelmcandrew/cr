@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_payment_pack.module,v 1.6.2.7 2009/04/18 07:29:15 islandusurper Exp $
+// $Id: uc_payment_pack.module,v 1.6.2.11 2010/07/12 01:57:44 tr Exp $
 
 /**
  * @file Provides the check/money order, COD, and "other" payment methods.
@@ -32,6 +32,15 @@ function uc_payment_pack_theme() {
       'file' => 'uc_payment_pack.admin.inc',
     ),
   );
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function uc_payment_pack_init() {
+  global $conf;
+  $conf['i18n_variables'][] = 'uc_cod_policy';
+  $conf['i18n_variables'][] = 'uc_check_policy';
 }
 
 /**
@@ -137,7 +146,7 @@ function uc_payment_method_cod($op, &$arg1) {
       if (($max = variable_get('uc_cod_max_order', 0)) > 0 && is_numeric($max)) {
         $context = array(
           'revision' => 'formatted-original',
-          'location' => 'cod-cart-details',
+          'type' => 'amount',
         );
         $details .= '<p>'. t('Orders totalling more than !number are <b>not eligible</b> for COD.', array('!number' => uc_price($max, $context))) .'</p>';
       }
@@ -224,6 +233,12 @@ function uc_payment_method_cod($op, &$arg1) {
       break;
 
     case 'settings':
+      $form['uc_cod_policy'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Policy message'),
+        '#default_value' => variable_get('uc_cod_policy', t('Full payment is expected upon delivery or prior to pick-up.')),
+        '#description' => t('Help message shown at checkout.'),
+      );
       $form['uc_cod_max_order'] = array(
         '#type' => 'textfield',
         '#title' => t('Maximum order total eligible for COD'),
@@ -350,12 +365,12 @@ function uc_payment_method_check($op, &$arg1) {
       $form['uc_check_mailing_street1'] = uc_textfield(uc_get_field_name('street1'), variable_get('uc_check_mailing_street1', ''), FALSE, NULL, 128);
       $form['uc_check_mailing_street2'] = uc_textfield(uc_get_field_name('street2'), variable_get('uc_check_mailing_street2', ''), FALSE, NULL, 128);
       $form['uc_check_mailing_city'] = uc_textfield(uc_get_field_name('city'), variable_get('uc_check_mailing_city', ''), FALSE);
-      $form['uc_check_mailing_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_check_mailing_country', 840));
+      $form['uc_check_mailing_country'] = uc_country_select(uc_get_field_name('country'), variable_get('uc_check_mailing_country', uc_store_default_country()));
       if (isset($_POST['uc_check_mailing_country'])) {
         $country_id = intval($_POST['uc_check_mailing_country']);
       }
       else {
-        $country_id = variable_get('uc_check_mailing_country', 840);
+        $country_id = variable_get('uc_check_mailing_country', uc_store_default_country());
       }
       $form['uc_check_mailing_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_check_mailing_zone', ''), FALSE, $country_id);
       $form['uc_check_mailing_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_check_mailing_postal_code', ''), FALSE, NULL, 10, 10);
@@ -369,4 +384,3 @@ function uc_payment_method_check($op, &$arg1) {
       return $form;
   }
 }
-

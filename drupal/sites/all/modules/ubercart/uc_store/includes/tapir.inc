@@ -1,14 +1,13 @@
 <?php
-// $Id: tapir.inc,v 1.1.2.8 2009/04/22 17:45:09 islandusurper Exp $
+// $Id: tapir.inc,v 1.1.2.11 2010/07/12 22:51:30 tr Exp $
 
 /**
  * @file
  * Contains the TAPIr code rolled into Ubercart core from Drupal contrib.
  */
 
-
 /**
- * Loads a table element for use in the Forms API or simply drupal_render().
+ * Load a table element for use in the Forms API or simply drupal_render().
  *
  * @param $table_id
  *   The string identifying the table you want to display, like a form ID.
@@ -133,7 +132,7 @@ function theme_tapir_table($element) {
 }
 
 /**
- * Builds an ORDER BY clause for a table's SELECT query based on the table's
+ * Build an ORDER BY clause for a table's SELECT query based on the table's
  *   columns.
  *
  * @param $columns
@@ -153,10 +152,3 @@ function tapirsort_sql($columns) {
   // Return the result of a tablesort on our header.
   return tablesort_sql($header);
 }
-
-function uc_store_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'uc_product_table') {
-    unset($form['table']['#value']['columns']['list_price']);
-  }
-}
-

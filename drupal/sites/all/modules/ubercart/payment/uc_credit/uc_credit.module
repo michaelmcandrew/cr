@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_credit.module,v 1.5.2.14 2009/04/02 21:01:46 islandusurper Exp $
+// $Id: uc_credit.module,v 1.5.2.26 2010/07/09 19:51:32 islandusurper Exp $
 
 /**
  * @file
@@ -81,16 +81,29 @@ function uc_credit_theme() {
 }
 
 /**
+ * Implementation of hook_init().
+ */
+function uc_credit_init() {
+  global $conf;
+  $conf['i18n_variables'][] = 'uc_credit_fail_message';
+  $conf['i18n_variables'][] = 'uc_credit_policy';
+}
+
+/**
  * Implementation of hook_form_alter().
  */
-function uc_credit_form_alter(&$form, &$form_state, $form_id) {
+function uc_credit_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'uc_payment_methods_form':
-      if (empty($_POST) && uc_credit_encryption_key() === FALSE) {
-        drupal_set_message(t('Credit card encryption must be configured to accept credit card payments.'), 'error');
+      if (user_access('administer credit cards')) {
+        if (empty($_POST) && uc_credit_encryption_key() === FALSE) {
+          // Report error and expand fieldset so the problem is easy to spot
+          form_set_error('uc_credit_encryption_path', t('Credit card encryption must be configured to accept credit card payments.'));
+          $form['method_credit']['#collapsed'] = FALSE;
+        }
+        $form['#validate'][] = 'uc_credit_settings_form_validate';
+        $form['#submit'][] = 'uc_credit_settings_form_submit';
       }
-      $form['#validate'][] = 'uc_credit_settings_form_validate';
-      $form['#submit'][] = 'uc_credit_settings_form_submit';
       break;
 
     case 'uc_cart_checkout_form':
@@ -155,11 +168,6 @@ function uc_credit_form_alter(&$form, &$form_state, $form_id) {
         // Get the transaction types associated with this gateway.
         $gateway_types = uc_credit_gateway_txn_types($key);
 
-        // Default to authorization plus capture if none are specified.
-        if (empty($types) && !is_null(_payment_gateway_data($key, 'credit'))) {
-          $types = array(UC_CREDIT_AUTH_CAPTURE);
-        }
-
         // Loop through all the available transaction types.
         $options = array();
 
@@ -207,6 +215,7 @@ function uc_credit_cron() {
 
       $cc_data = array(
         'cc_number' => substr($data['cc_data']['cc_number'], -4),
+        'cc_type' => $data['cc_data']['cc_type'],
       );
 
       // Stuff the serialized and encrypted CC details into the array.
@@ -362,13 +371,13 @@ function uc_credit_payment_method() {
   }
 
   $path = base_path() . drupal_get_path('module', 'uc_credit');
-  $cc_types = array('visa', 'mastercard', 'maestro', 'discover', 'amex');
+  $title = t('Credit card:');
+  $cc_types = array('visa', 'mastercard', 'discover', 'amex');
   foreach ($cc_types as $type) {
     if (variable_get('uc_credit_'. $type, TRUE)) {
-      $title .= ' <img src="'. $path .'/images/'. $type .'.gif" style="position: relative; top: 5px;">';
+      $title .= ' <img src="'. $path .'/images/'. $type .'.gif" style="position: relative; top: 5px;" />';
     }
   }
-  $title .= t(' Credit or debit card');
   $methods[] = array(
     'id' => 'credit',
     'name' => t('Credit card'),
@@ -527,7 +536,8 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       }
       $review[] = array('title' => t('Card Number'), 'data' => uc_credit_display_number($arg1->payment_details['cc_number']));
       if (variable_get('uc_credit_start_enabled', FALSE)) {
-        $review[] = array('title' => t('Start Date'), 'data' => $arg1->payment_details['cc_start_month'] .'/'. $arg1->payment_details['cc_start_year']);
+        $start = $arg1->payment_details['cc_start_month'] .'/'. $arg1->payment_details['cc_start_year'];
+        $review[] = array('title' => t('Start Date'), 'data' => strlen($start) > 1 ? $start : '');
       }
       $review[] = array('title' => t('Expiration'), 'data' => $arg1->payment_details['cc_exp_month'] .'/'. $arg1->payment_details['cc_exp_year']);
       if (variable_get('uc_credit_issue_enabled', FALSE)) {
@@ -618,8 +628,13 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       return $output;
 
     case 'order-details':
-      $details = drupal_get_form('uc_payment_method_credit_form', $arg1);
-      return uc_strip_form($details);
+      if (variable_get('uc_credit_debug', FALSE)) {
+        $details = drupal_get_form('uc_payment_method_credit_form', $arg1);
+        return uc_strip_form($details);
+      }
+      else {
+        return t('Use the terminal available through the<br />%button button on the View tab to<br />process credit card payments.', array('%button' => t('Process card')));
+      }
 
     case 'edit-process':
       $cache = uc_credit_cache('load');
@@ -695,7 +710,7 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
       $form['cc_clear'] = array(
         '#type' => 'fieldset',
         '#title' => t('Debug mode data clearing'),
-        '#description' => t('Specify below the status and age of orders whose credit card details will be removed.  This setting only applies when operating in debug mode.  When not in debug mode, no credit card information except the last 4 digits of the card number will be stored.', array('!url' => url('admin/store/settings/cart/edit'))),
+        '#description' => t('Specify below the status and age of orders whose credit card details will be removed.  This setting only applies when operating in debug mode.  When not in debug mode, no credit card information except the last 4 digits of the card number will be stored. <strong>Cron must be running for this feature to work.</strong>', array('!url' => url('admin/store/settings/cart/edit'))),
         '#collapsible' => FALSE,
       );
       foreach (uc_order_status_list() as $status) {
@@ -793,11 +808,6 @@ function uc_payment_method_credit($op, &$arg1, $silent = FALSE) {
         '#title' => t('Mastercard'),
         '#default_value' => variable_get('uc_credit_mastercard', TRUE),
       );
-      $form['cc_types']['uc_credit_maestro'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Maestro'),
-        '#default_value' => variable_get('uc_credit_maestro', TRUE),
-      );
       $form['cc_types']['uc_credit_discover'] = array(
         '#type' => 'checkbox',
         '#title' => t('Discover'),
@@ -884,9 +894,8 @@ function uc_credit_settings_form_submit($form, &$form_state) {
     if (!empty($dir) && $dir !== t('Not configured, see below.')) {
       if (!file_exists($dir .'/uc_credit.key')) {
         if (!$file = fopen($dir .'/uc_credit.key', 'wb')) {
-          $message = t('Credit card encryption key file creation failed. Check your filepath settings and directory permissions.');
-          drupal_set_message($message, 'error');
-          watchdog('uc_credit', $message, WATCHDOG_ERROR);
+          drupal_set_message(t('Credit card encryption key file creation failed. Check your filepath settings and directory permissions.'), 'error');
+          watchdog('uc_credit', 'Credit card encryption key file creation failed. Check your filepath settings and directory permissions.', array(), WATCHDOG_ERROR);
         }
         else {
           // Replacement key generation suggested by Barry Jaspan for increased security.
@@ -894,7 +903,7 @@ function uc_credit_settings_form_submit($form, &$form_state) {
           fclose($file);
 
           drupal_set_message(t('Credit card encryption key file generated. Card data will now be encrypted.'));
-          watchdog('uc_credit', 'Credit card encryption key file generated.');
+          watchdog('uc_credit', 'Credit card encryption key file generated. Card data will now be encrypted.');
         }
       }
     }
@@ -935,7 +944,7 @@ function uc_payment_method_credit_form($form_state, $order) {
       '#type' => 'select',
       '#title' => t('Card type'),
       '#options' => $options,
-      '#default_value' => $order->payment_details['cc_type'],
+      '#default_value' => $order->payment_details['cc_type'] ? $order->payment_details['cc_type'] : array_shift(array_keys($options)),
     );
   }
 
@@ -975,8 +984,8 @@ function uc_payment_method_credit_form($form_state, $order) {
   );
 
   if (variable_get('uc_credit_start_enabled', FALSE)) {
-    $form['cc_start_month'] = uc_select_month(t('Start Month'), $order->payment_details['cc_start_month']);
-    $form['cc_start_year'] = uc_select_year(t('Start Year'), $order->payment_details['cc_start_year'], date('Y') - 10, date('Y'));
+    $form['cc_start_month'] = uc_select_month(t('Start Month'), $order->payment_details['cc_start_month'], TRUE);
+    $form['cc_start_year'] = uc_select_year(t('Start Year'), $order->payment_details['cc_start_year'], date('Y') - 10, date('Y'), TRUE);
   }
 
   $form['cc_exp_month'] = uc_select_month(t('Expiration Month'), $order->payment_details['cc_exp_month']);
@@ -1063,8 +1072,8 @@ function theme_uc_payment_method_credit_form($form) {
   if (arg(1) == 'checkout') {
     $path = base_path() . drupal_get_path('module', 'uc_credit');
     $output = '<table class="inline-pane-table" cellpadding="2">';
-    if (strlen($form['cc_policy']) > 0) {
-      $output .= '<tr><td colspan="2">'. variable_get('uc_credit_policy', '')
+    if (strlen($form['cc_policy']['#value']) > 0) {
+      $output .= '<tr><td colspan="2" class="description">'. $form['cc_policy']['#value']
                 .'</td></tr>';
     }
     if (variable_get('uc_credit_type_enabled', FALSE)) {
@@ -1094,7 +1103,7 @@ function theme_uc_payment_method_credit_form($form) {
     if (variable_get('uc_credit_cvv_enabled', TRUE)) {
       $form['cc_cvv']['#title'] = '';
       $output .= '<tr><td class="field-label">'. t('CVV:') .'</td><td>'. drupal_render($form['cc_cvv'])
-                .' <img src="'. $path .'/images/info.png" onclick="cvv_info_popup();" style="cursor: pointer; position: relative; top: 3px;"> <a style="cursor: pointer; font-weight: normal;" onclick="cvv_info_popup();">'
+                .' <img src="'. $path .'/images/info.png" onclick="cvv_info_popup();" style="cursor: pointer; position: relative; top: 3px;" /> <a style="cursor: pointer; font-weight: normal;" onclick="cvv_info_popup();">'
                 . t("What's the CVV?") .'</a></td></tr>';
     }
     if (variable_get('uc_credit_bank_enabled', FALSE)) {
@@ -1118,9 +1127,18 @@ function theme_uc_payment_method_credit_form($form) {
     }
     $output .= '<tr><td class="oet-label">'. t('Card Number:') .'</td><td>'
              . drupal_render($form['cc_number']) .'</td></tr>';
+    if (variable_get('uc_credit_start_enabled', FALSE)) {
+      $output .= '<tr><td class="oet-label">'. t('Start Date:') .'</td><td>'
+               . drupal_render($form['cc_start_month']) .' '. drupal_render($form['cc_start_year'])
+                .' '. t('(if present)') .'</td></tr>';
+    }
     $output .= '<tr><td class="oet-label">'. t('Expiration Date:') .'</td><td>'
              . drupal_render($form['cc_exp_month']) .' '
              . drupal_render($form['cc_exp_year']) .'</td></tr>';
+    if (variable_get('uc_credit_issue_enabled', FALSE)) {
+      $output .= '<tr><td class="oet-label">'. t('Issue Number:') .'</td><td>'
+               . drupal_render($form['cc_issue']) .' '. t('(if present)') .'</td></tr>';
+    }
     if (variable_get('uc_credit_cvv_enabled', TRUE)) {
       $form['cc_cvv']['#title'] = '';
       $output .= '<tr><td class="oet-label">'. t('CVV:') .'</td><td>'
@@ -1236,7 +1254,6 @@ function _valid_cvv($cvv) {
 
   if (variable_get('uc_credit_visa', TRUE) ||
       variable_get('uc_credit_mastercard', TRUE) ||
-      variable_get('uc_credit_maestro', TRUE) ||
       variable_get('uc_credit_discover', TRUE)) {
     $digits[] = 3;
   }
@@ -1261,8 +1278,8 @@ function _valid_card_number($number) {
   if (($id == 3 && !variable_get('uc_credit_amex', TRUE)) ||
       ($id == 4 && !variable_get('uc_credit_visa', TRUE)) ||
       ($id == 5 && !variable_get('uc_credit_mastercard', TRUE)) ||
-      ($id == 6 && !variable_get('uc_credit_discover', TRUE) && !variable_get('uc_credit_maestro', TRUE)) ||
-    !ctype_digit($number)) {
+      ($id == 6 && !variable_get('uc_credit_discover', TRUE)) ||
+      !ctype_digit($number)) {
     return FALSE;
   }
 
@@ -1292,9 +1309,14 @@ function _valid_card_number($number) {
  * @param $year
  *   The 4-digit numeric representation of the year, i.e. 2008.
  * @return
- *   TRUE for cards whose start date is in the past, FALSE otherwise.
+ *   TRUE for cards whose start date is blank (both month and year) or in the
+ *   past, FALSE otherwise.
  */
 function _valid_card_start($month, $year) {
+  if (empty($month) && empty($year)) {
+    return TRUE;
+  }
+
   if (empty($month) || empty($year)) {
     return FALSE;
   }
@@ -1574,4 +1596,3 @@ function uc_credit_gateway_txn_types($gateway) {
 
   return $types;
 }
-

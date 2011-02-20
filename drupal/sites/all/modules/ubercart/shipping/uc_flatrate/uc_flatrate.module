@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_flatrate.module,v 1.5.2.9 2009/04/18 07:29:15 islandusurper Exp $
+// $Id: uc_flatrate.module,v 1.5.2.13 2010/01/27 22:23:32 islandusurper Exp $
 
 /**
  * @file
@@ -48,7 +48,7 @@ function uc_flatrate_menu() {
  *
  * Add a form element for the shipping rate of a product.
  */
-function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
+function uc_flatrate_form_alter(&$form, $form_state, $form_id) {
   if (uc_product_is_product_form($form)) {
     $sign_flag = variable_get('uc_sign_after_amount', FALSE);
     $currency_sign = variable_get('uc_currency_sign', '$');
@@ -57,10 +57,9 @@ function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
     $result = db_query("SELECT mid, title, product_rate FROM {uc_flatrate_methods}");
     $context = array(
       'revision' => 'formatted',
-      'location' => 'shipping-flatrate-method-node-form',
+      'type' => 'amount',
     );
     while ($method = db_fetch_object($result)) {
-      $context['subject']['flatrate_method'] = $method;
       if (!isset($form['shipping']['flatrate'])) {
         $form['shipping']['flatrate'] = array(
           '#type' => 'fieldset',
@@ -76,7 +75,7 @@ function uc_flatrate_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'textfield',
         '#title' => $method->title,
         '#default_value' => $form['#node']->flatrate[$method->mid],
-          '#description' => t('Default rate: %price', array('%price' => uc_price($method->product_rate, $context))),
+        '#description' => t('Default rate: %price', array('%price' => uc_price($method->product_rate, $context))),
         '#size' => 16,
         '#field_prefix' => $sign_flag ? '' : $currency_sign,
         '#field_suffix' => $sign_flag ? $currency_sign : '',
@@ -200,24 +199,24 @@ function uc_flatrate_shipping_method() {
  *   The order's products.
  * @param $details
  *   Other order details including a shipping address.
+ * @param $method
+ *   The shipping method to create the quote.
  * @return
- *   A JSON object containing the shipping quote for the order.
+ *   An array containing the shipping quote for the order.
  */
 function uc_flatrate_quote($products, $details, $method) {
   $method = explode('_', $method['id']);
   $mid = $method[1];
   $context = array(
     'revision' => 'altered',
-    'location' => 'shipping-flatrate-method-json',
+    'type' => 'amount',
   );
 
   if ($method = db_fetch_object(db_query("SELECT * FROM {uc_flatrate_methods} WHERE mid = %d", $mid))) {
-    $context['subject']['flatrate_method'] = $method;
     // Start at the base rate.
     $rate = $method->base_rate;
 
     foreach ($products as $product) {
-      $context['subject']['order_product'] = $product;
       if (empty($product->flatrate) || is_null($product->flatrate[$mid])) {
         $price_info = array(
           'price' => $method->product_rate,
@@ -236,7 +235,6 @@ function uc_flatrate_quote($products, $details, $method) {
       }
     }
 
-    unset($context['subject']['order_product']);
     $altered = uc_price($rate, $context);
     $context['revision'] = 'formatted';
     $formatted = uc_price($rate, $context);

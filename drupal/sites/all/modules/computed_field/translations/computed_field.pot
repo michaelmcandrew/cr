@@ -1,4 +1,4 @@
-# $Id: computed_field.pot,v 1.1.2.2 2009/08/01 00:13:33 pl2 Exp $
+# $Id: computed_field.pot,v 1.1.2.3 2010/10/12 23:34:00 moonshine Exp $
 #
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>

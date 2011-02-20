@@ -1,13 +1,14 @@
 <?php
-// $Id: uc_cart.admin.inc,v 1.1.2.8 2009/04/18 07:29:17 islandusurper Exp $
+// $Id: uc_cart.admin.inc,v 1.1.2.18 2010/06/05 18:53:14 tr Exp $
 
 /**
  * @file
  * Cart administration menu items.
- *
  */
 
-// Displays an overview of the cart settings.
+/**
+ * Display an overview of the cart settings.
+ */
 function uc_cart_cart_settings_overview() {
   // Load the form summaries for pages beneath this path.
   $summaries = summarize_child_form_pages('admin/store/settings/cart/edit');
@@ -21,11 +22,11 @@ function uc_cart_cart_settings_overview() {
     $help_text = t('Help text is not shown in block.');
   }
   $summaries[] = array(
-    'path' => 'admin/store/settings/cart/edit/block',
+    'path' => url('admin/store/settings/cart/edit/block'),
     'href' => 'admin/store/settings/cart/edit/block',
     'title' => t('Cart block'),
     'items' => array(
-      t('Cart block is !option when empty.', array('!option' => variable_get('uc_cart_empty_hide', FALSE) ? t('hidden') : t('shown'))),
+      t('Cart block is !option when empty.', array('!option' => variable_get('uc_cart_block_empty_hide', FALSE) ? t('hidden') : t('shown'))),
       t('Cart block is !option by default.', array('!option' => variable_get('uc_cart_expanded', FALSE) ? t('expanded') : t('collapsed'))),
       $help_text,
     ),
@@ -35,11 +36,22 @@ function uc_cart_cart_settings_overview() {
   return theme('summary_overview', $summaries);
 }
 
+/**
+ * General settings for the shopping cart.
+ *
+ * @ingroup forms
+ * @see uc_cart_cart_settings_form_validate()
+ */
 function uc_cart_cart_settings_form() {
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General cart settings'),
     '#summary callback' => 'summarize_form',
+  );
+  $form['general']['uc_cart_add_item_msg'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display an update message when an item is added to the cart through an add to cart form.'),
+    '#default_value' => variable_get('uc_cart_add_item_msg', TRUE),
   );
   $form['general']['uc_add_item_redirect'] = array(
     '#type' => 'textfield',
@@ -53,7 +65,7 @@ function uc_cart_cart_settings_form() {
 
   $context = array(
     'revision' => 'formatted',
-    'location' => 'minimum-subtotal-summary'
+    'type' => 'amount',
   );
   $form['general']['uc_minimum_subtotal'] = array(
     '#type' => 'textfield',
@@ -66,11 +78,28 @@ function uc_cart_cart_settings_form() {
     '#field_suffix' => variable_get('uc_sign_after_amount', FALSE) ? variable_get('uc_currency_sign', '$') : '',
   );
 
+  $durations = array(
+    'singular' => array(
+      'minutes' => t('minute'),
+      'hours' => t('hour'),
+      'days' => t('day'),
+      'weeks' => t('week'),
+      'years' => t('year'),
+    ),
+    'plural' => array(
+      'minutes' => t('minutes'),
+      'hours' => t('hours'),
+      'days' => t('days'),
+      'weeks' => t('weeks'),
+      'years' => t('years'),
+    ),
+  );
+
   $form['anonymous'] = array(
     '#type' => 'fieldset',
     '#title' => t('Anonymous cart duration'),
-    '#description' => t('Set the length of time products remain in the cart for customers who <strong>have not</strong> logged in.'),
-    '#summary' => t('Anonymous cart duration is @duration', array('@duration' => variable_get('uc_cart_anon_duration', '4') .' '. variable_get('uc_cart_anon_unit', 'hours'))),
+    '#description' => t('Set the length of time products remain in the cart for customers who <strong>have not</strong> logged in. Cron must be running for this feature to work.'),
+    '#summary' => format_plural(variable_get('uc_cart_anon_duration', '4'), 'Anonymous cart duration is 1 @unit.', 'Anonymous cart duration is @count @units.', array('@unit' => $durations['singular'][variable_get('uc_cart_anon_unit', 'hours')], '@units' => $durations['plural'][variable_get('uc_cart_anon_unit', 'hours')])),
   );
   $form['anonymous']['uc_cart_anon_duration'] = array(
     '#type' => 'select',
@@ -98,8 +127,8 @@ function uc_cart_cart_settings_form() {
   $form['authenticated'] = array(
     '#type' => 'fieldset',
     '#title' => t('Authenticated cart duration'),
-    '#description' => t('Set the length of time products remain in the cart for customers who <strong>have</strong> logged in.'),
-    '#summary' => t('Authenticated cart duration is @duration', array('@duration' => variable_get('uc_cart_auth_duration', '1') .' '. variable_get('uc_cart_anon_unit', 'years'))),
+    '#description' => t('Set the length of time products remain in the cart for customers who <strong>have</strong> logged in. Cron must be running for this feature to work.'),
+    '#summary' => format_plural(variable_get('uc_cart_auth_duration', '1'), 'Authenticated cart duration is 1 @unit.', 'Authenticated cart duration is @count @units.', array('@unit' => $durations['singular'][variable_get('uc_cart_auth_unit', 'years')], '@units' => $durations['plural'][variable_get('uc_cart_auth_unit', 'years')])),
   );
   $form['authenticated']['uc_cart_auth_duration'] = array(
     '#type' => 'select',
@@ -184,12 +213,20 @@ function uc_cart_cart_settings_form() {
   return system_settings_form($form);
 }
 
+/**
+ * @see uc_cart_cart_settings_form()
+ */
 function uc_cart_cart_settings_form_validate($form, &$form_state) {
   if (!is_numeric($form_state['values']['uc_minimum_subtotal']) || $form_state['values']['uc_minimum_subtotal'] < 0 || $form_state['values']['uc_minimum_subtotal'] === '-0') {
     form_set_error('uc_minimum_subtotal', t('Minimum order subtotal should be a non-negative number.'));
   }
 }
 
+/**
+ * Settings for panes on the cart page.
+ *
+ * @ingroup forms
+ */
 function uc_cart_cart_panes_form() {
   $panes = uc_cart_cart_pane_list(NULL);
 
@@ -217,20 +254,30 @@ function uc_cart_cart_panes_form() {
   return system_settings_form($form);
 }
 
+/**
+ * Helpful message redirecting users to the block settings.
+ */
 function uc_cart_block_edit_info() {
   $output = t('Drupal handles all the block settings forms automatically.') .'<p>'
-          . t('<a href="!url">Click here</a> to goto the shopping cart block configuration page.',
+          . t('<a href="!url">Click here</a> to go to the shopping cart block configuration page.',
               array('!url' => url('admin/build/block/configure/uc_cart/0')));
 
   return $output;
 }
 
-// Displays an overview of the checkout settings.
+/**
+ * Display an overview of the checkout settings.
+ */
 function uc_cart_checkout_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return theme('summary_overview', summarize_child_form_pages('admin/store/settings/checkout/edit'));
 }
 
+/**
+ * General checkout settings.
+ *
+ * @ingroup forms
+ */
 function uc_cart_checkout_settings_form() {
   $form['general'] = array(
     '#type' => 'fieldset',
@@ -340,7 +387,7 @@ function uc_cart_checkout_settings_form() {
 }
 
 /**
- * Summarizes cart and checkout panes.
+ * Summarize cart and checkout panes.
  *
  * @param $form
  *   The form passed from the summarizer
@@ -362,6 +409,11 @@ function _uc_cart_panes_summarize($form, $panes) {
   return $items;
 }
 
+/**
+ * Settings for panes on the checkout page.
+ *
+ * @ingroup forms
+ */
 function uc_cart_checkout_panes_form() {
   $panes = _checkout_pane_list();
 
@@ -401,6 +453,11 @@ function uc_cart_checkout_panes_form() {
   return system_settings_form($form);
 }
 
+/**
+ * Settings for help messages displayed on the checkout page.
+ *
+ * @ingroup forms
+ */
 function uc_cart_checkout_messages_form() {
   $form['uc_checkout_instructions'] = array(
     '#type' => 'textarea',
@@ -494,4 +551,3 @@ function uc_cart_checkout_messages_form() {
 
   return system_settings_form($form);
 }
-

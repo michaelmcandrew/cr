@@ -1,12 +1,14 @@
 <?php
-// $Id: uc_store.admin.inc,v 1.1.2.10 2009/04/18 07:29:16 islandusurper Exp $
+// $Id: uc_store.admin.inc,v 1.1.2.21 2010/07/12 01:28:18 tr Exp $
 
 /**
  * @file
  * Store administration menu items.
- *
  */
 
+/**
+ * Display dashboard to other admin pages for the store.
+ */
 function uc_store_admin() {
   $tree = menu_navigation_links('navigation', 2);
 
@@ -82,8 +84,6 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
                       ." GROUP BY o.uid, o.billing_last_name, o.billing_first_name ";
         break;
     }
-
-    $message = t('The following users on your site have placed orders:');
   }
 
   $header = array(
@@ -146,11 +146,8 @@ function uc_store_customers($message = NULL, $query = NULL, $count_query = NULL,
 
   drupal_add_js(drupal_get_path('module', 'uc_store') .'/uc_store.js');
 
-  $output = '<p>'. $message .'</p>'
-          . theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-customer-table'))
-           .'<br />'. theme_pager(NULL, $page_length);
-
-  return $output;
+  return theme('table', $header, $rows, array('width' => '100%', 'class' => 'uc-customer-table'))
+       . theme('pager');
 }
 
 /**
@@ -212,21 +209,24 @@ function uc_store_customer_search() {
   return $output;
 }
 
+/**
+ * The customer search form.
+ *
+ * @ingroup forms
+ * @see uc_store_customer_search_form_submit()
+ */
 function uc_store_customer_search_form() {
+  $form = array();
+
   $form['search'] = array(
     '#type' => 'fieldset',
     '#title' => t('Search options'),
+    '#description' => t('Search for customers based on any of the following fields. Use * as a wildcard to match any character.') .'<br />'. t("For example, searching by last name for 's*' will return all customers whose last name starts with an s.") .'<br />'. t('(<em>Leave a field empty to ignore it in the search.</em>)'),
     '#collapsible' => TRUE,
     '#collapsed' => arg(4) == 'results' ? TRUE : FALSE,
   );
 
-  $form['search']['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td colspan="4">');
-
-  $form['search']['desc'] = array(
-    '#value' => '<div>'. t("Search for customers based on any of the following fields. Use * as a wildcard to match any character.<br/>For example, searching by last name for 's*' will return all customers whose last name starts with an s.<br/>(<em>Leave a field empty to ignore it in the search.</em>)") .'</div>',
-  );
-
-  $form['search']['table2'] = array('#value' => '</td></tr><tr><td>');
+  $form['search']['table1'] = array('#value' => '<table><tbody style="border: 0px;"><tr><td>');
 
   $form['search']['first_name'] = array(
     '#type' => 'textfield',
@@ -236,7 +236,7 @@ function uc_store_customer_search_form() {
     '#maxlength' => 32,
   );
 
-  $form['search']['table3'] = array('#value' => '</td><td>');
+  $form['search']['table2'] = array('#value' => '</td><td>');
 
   $form['search']['last_name'] = array(
     '#type' => 'textfield',
@@ -246,7 +246,7 @@ function uc_store_customer_search_form() {
     '#maxlength' => 32,
   );
 
-  $form['search']['table4'] = array('#value' => '</td><td>');
+  $form['search']['table3'] = array('#value' => '</td><td>');
 
   $form['search']['email'] = array(
     '#type' => 'textfield',
@@ -256,18 +256,21 @@ function uc_store_customer_search_form() {
     '#maxlength' => 96,
   );
 
-  $form['search']['table5'] = array('#value' => '</td><td>');
+  $form['search']['table4'] = array('#value' => '</td><td>');
 
   $form['search']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
   );
 
-  $form['search']['table6'] = array('#value' => '</td></tr></tbody></table>');
+  $form['search']['table5'] = array('#value' => '</td></tr></tbody></table>');
 
   return $form;
 }
 
+/**
+ * @see uc_store_customer_search_form()
+ */
 function uc_store_customer_search_form_submit($form, &$form_state) {
   if (strlen(trim($form_state['values']['first_name'])) == 0) {
     $first_name = '0';
@@ -344,13 +347,21 @@ function uc_store_ubercart_help_tokens() {
   return $output;
 }
 
-// Displays an overview of the country settings.
+/**
+ * Display an overview of the country settings.
+ */
 function uc_country_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return theme('summary_overview', summarize_child_form_pages('admin/store/settings/countries/edit'));
 
 }
 
+/**
+ * Import settings from a country file.
+ *
+ * @ingroup forms
+ * @see uc_country_import_form_submit()
+ */
 function uc_country_import_form() {
   $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
   while ($country = db_fetch_object($result)) {
@@ -359,6 +370,7 @@ function uc_country_import_form() {
   $files = _country_import_list();
 
   $header = array(t('Country'), t('Code'), t('Version'), t('Operations'));
+  $rows = array();
   if (is_array($countries)) {
     foreach ($countries as $country) {
       $row = array(
@@ -385,6 +397,7 @@ function uc_country_import_form() {
     }
   }
 
+  $import_list = array();
   foreach ($files as $file) {
     $import_list[$file['file']] = $file['file'];
   }
@@ -430,8 +443,12 @@ function uc_country_import_form() {
   return $form;
 }
 
+/**
+ * Summary callback for country settings.
+ *
+ * @see uc_coutnry_settings_overview()
+ */
 function _uc_country_summarize() {
-
   $items = array();
 
   $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
@@ -451,6 +468,9 @@ function _uc_country_summarize() {
   return $items;
 }
 
+/**
+ * @see uc_country_import_form()
+ */
 function uc_country_import_form_submit($form, &$form_state) {
   $files = $form_state['values']['import_file'];
 
@@ -464,6 +484,12 @@ function uc_country_import_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Form to set country address formats.
+ *
+ * @ingroup forms
+ * @see uc_country_formats_form_submit()
+ */
 function uc_country_formats_form() {
   $form['instructions'] = array(
     '#type' => 'fieldset',
@@ -490,7 +516,7 @@ function uc_country_formats_form() {
   );
   $form['instructions']['text'] = array(
     '#value' => '<div>'. t('The following variables should be used in configuring addresses for the countries you ship to:') .'<p>'
-              . theme('table', $header, $rows) .'</p><p>'. t('*Adding _if to any country variable will make it only display for addresses<br />whose country is different than the default store country.') .'</div>',
+              . theme('table', $header, $rows) .'</p><p>'. t('*Adding _if to any country variable will make it display only for addresses<br />whose country is different than the default store country.') .'</div>',
   );
 
   $result = db_query("SELECT * FROM {uc_countries} ORDER BY country_name ASC");
@@ -528,6 +554,9 @@ function uc_country_formats_form() {
   return $form;
 }
 
+/**
+ * @see uc_country_formats_form()
+ */
 function uc_country_formats_form_submit($form, &$form_state) {
   foreach ($form_state['values']['countries'] as $country_id => $data) {
     variable_set('uc_address_format_'. $country_id, $data['address_format']);
@@ -535,14 +564,16 @@ function uc_country_formats_form_submit($form, &$form_state) {
   drupal_set_message(t('Country settings saved.'));
 }
 
-// Displays an overview of the store settings.
+/**
+ * Display an overview of the store settings.
+ */
 function uc_store_store_settings_overview() {
   // Theme all the pages beneath this path into summary overviews.
   return theme('summary_overview', summarize_child_form_pages('admin/store/settings/store/edit'));
 }
 
 /**
- * Summarizes the store's address settings.
+ * Summarize the store's address settings.
  *
  * @param $form
  *   The form passed from the summarizer
@@ -557,7 +588,11 @@ function _uc_store_address_summarize($form) {
   );
 }
 
-// Displays the form for store settings.
+/**
+ * Display the form for store settings.
+ *
+ * @ingroup forms
+ */
 function uc_store_store_settings_form() {
   $form['uc_store_name'] = uc_textfield(t('Store name'), variable_get('uc_store_name', NULL), FALSE, NULL, 64);
   $form['uc_store_owner'] = uc_textfield(t('Store owner'), variable_get('uc_store_owner', NULL), FALSE, NULL, 64);
@@ -602,21 +637,25 @@ function uc_store_store_settings_form() {
   $form['store_address']['uc_store_zone'] = uc_zone_select(uc_get_field_name('zone'), variable_get('uc_store_zone', NULL), NULL, $country_id);
   $form['store_address']['uc_store_postal_code'] = uc_textfield(uc_get_field_name('postal_code'), variable_get('uc_store_postal_code', NULL), FALSE, NULL, 10);
 
-  $form['uc_notify_store_help_page'] = array(
+  $form['uc_store_help_page'] = array(
     '#type' => 'textfield',
     '#title' => t('Store help page'),
     '#description' => t('The Drupal page for the store help link.'),
-    '#default_value' => variable_get('uc_notify_store_help_page', ''),
+    '#default_value' => variable_get('uc_store_help_page', ''),
     '#size' => 32,
     '#field_prefix' => url(NULL, array('absolute' => TRUE)) . (variable_get('clean_url', 0) ? '' : '?q='),
-    '#summary' => variable_get('uc_notify_store_help_page', '') ? t('Help page is <a href="!url">!url</a>.', array('!url' => url(variable_get('uc_notify_store_help_page', ''), array('absolute' => TRUE)))) : t('Help page is not set.'),
+    '#summary' => variable_get('uc_store_help_page', '') ? t('Help page is <a href="!url">!url</a>.', array('!url' => url(variable_get('uc_store_help_page', ''), array('absolute' => TRUE)))) : t('Help page is not set.'),
   );
 
   return system_settings_form($form);
 }
 
+/**
+ * Settings for how miscellaneous store components are displayed.
+ *
+ * @ingroup forms
+ */
 function uc_store_display_settings_form() {
-
   $display_options = array(
     1 => t('Dashboard with collapsed submenu links'),
     2 => t('Dashboard with expanded submenu links'),
@@ -626,7 +665,7 @@ function uc_store_display_settings_form() {
 
   $form['uc_store_admin_page_display'] = array(
     '#type' => 'radios',
-    '#title' => t('Display type for the main store admininstration page'),
+    '#title' => t('Display type for the main store administration page'),
     '#description' => t('Some options are better suited for different themes, so feel free to try them all out!'),
     '#options' => $display_options,
     '#summary' => t('Store admin page is displaying: <br />@display', array('@display' => $display_options[variable_get('uc_store_admin_page_display', 1)])),
@@ -639,9 +678,6 @@ function uc_store_display_settings_form() {
   );
 
   $desc = t('Select the address to be used on customer lists and summaries.');
-  if (module_exists('uc_notify')) {
-    $desc .= ' '. t('Also applies to notification e-mails.');
-  }
   $form['uc_customer_list_address'] = array(
     '#type' => 'radios',
     '#title' => t('Primary customer address'),
@@ -679,6 +715,11 @@ function uc_store_display_settings_form() {
   return system_settings_form($form);
 }
 
+/**
+ * Display the form for format settings.
+ *
+ * @ingroup forms
+ */
 function uc_store_format_settings_form() {
   $form['currency'] = array(
     '#type' => 'fieldset',
@@ -698,7 +739,7 @@ function uc_store_format_settings_form() {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'currency-format-form',
+    'type' => 'amount',
   );
   $form['currency']['example'] = array(
     '#type' => 'textfield',
@@ -774,7 +815,7 @@ function uc_store_format_settings_form() {
     '#collapsed' => TRUE,
   );
   $form['length']['instructions'] = array(
-    '#value' => '<div>'. t('Supply a format string for each unit. !value represents the weight value.') .'</div>',
+    '#value' => '<div>'. t('Supply a format string for each unit. !value represents the length value.') .'</div>',
   );
   $units = array(
     'in' => t('Inches'),
@@ -817,32 +858,11 @@ function uc_store_format_settings_form() {
   return system_settings_form($form);
 }
 
-function uc_store_report_settings() {
-  $form['uc_store_report'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Report version information to Ubercart.org as shown below.'),
-    '#summary callback' => 'summarize_checkbox',
-    '#summary arguments' => array(
-      t('Version information is being reported to Ubercart.org.'),
-      t('Version information is not being reported to Ubercart.org.'),
-    ),
-    '#default_value' => variable_get('uc_store_report', TRUE),
-  );
-
-  $form['data'] = array(
-    '#type' => 'fieldset',
-    '#summary callback' => 'summarize_null',
-    '#title' => t('Report preview'),
-  );
-  $form['data']['preview'] = array(
-    '#value' => '<pre>'. print_r(uc_store_report_data(), TRUE) .'</pre>',
-  );
-
-  return system_settings_form($form);
-}
-
 /**
  * Form to enter initials for an administrative user.
+ *
+ * @ingroup forms
+ * @see uc_store_initials_submit()
  */
 function uc_store_initials() {
   $form['username'] = array(
@@ -868,6 +888,9 @@ function uc_store_initials() {
   return $form;
 }
 
+/**
+ * @see uc_store_initials()
+ */
 function uc_store_initials_submit($form, &$form_state) {
   $result = db_query("SELECT uid FROM {users} WHERE name = '%s'", $form_state['values']['username']);
   if ($user = db_fetch_object($result)) {
@@ -894,6 +917,9 @@ function uc_store_tables() {
   return $output;
 }
 
+/**
+ * Display a list of orders made by a customer.
+ */
 function uc_store_customer_orders($uid) {
   $result = pager_query("SELECT * FROM {uc_orders} WHERE uid = %d AND "
                        ."order_status IN ". uc_order_status_list('general', TRUE)
@@ -905,7 +931,10 @@ function uc_store_customer_orders($uid) {
 
   $context = array(
     'revision' => 'themed-original',
-    'location' => 'customer-orders',
+    'type' => 'order_total',
+    'subject' => array(
+      'order' => $order,
+    ),
   );
   $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
   while ($order = db_fetch_object($result)) {
@@ -935,7 +964,6 @@ function uc_store_customer_orders($uid) {
     $totals['items'] += $item_count['COUNT(*)'];
     $totals['total'] += $order->order_total;
 
-    $context['subject'] = array('order' => $order);
     $rows[] = array(
       'data' => array(
         array('data' => $icons),
@@ -958,10 +986,12 @@ function uc_store_customer_orders($uid) {
 
   $context = array(
     'revision' => 'formatted-original',
-    'location' => 'customer-orders-total',
+    'type' => 'amount',
   );
-  $output = '<p>'. l(t('Create an order for this customer.'),
-                     'admin/store/orders/create/'. $uid) .'</p>';
+  if (user_access('create orders')) {
+    $output = '<p>'. l(t('Create an order for this customer.'),
+                       'admin/store/orders/create/'. $uid) .'</p>';
+  }
   $output .= '<p>'. t('!totals_orders orders shown match that account with !totals_items items purchased and !totals_total spent:',
                      array('!totals_orders' => $totals['orders'],
                            '!totals_items' => $totals['items'],
@@ -1013,7 +1043,12 @@ function uc_country_enable($country_id) {
   drupal_goto('admin/store/settings/countries/edit');
 }
 
-// Form to completely remove a country.
+/**
+ * Form to completely remove a country.
+ *
+ * @ingroup forms
+ * @see uc_country_remove_form_submit()
+ */
 function uc_country_remove_form($form_state, $country_id) {
   // Fetch the country name from the database.
   $country = db_result(db_query("SELECT country_name FROM {uc_countries} WHERE country_id = %d", $country_id));
@@ -1035,6 +1070,9 @@ function uc_country_remove_form($form_state, $country_id) {
   return confirm_form($form, t('Are you sure you want to remove @country from the system?', array('@country' => $country)), 'admin/store/settings/countries/edit', NULL, t('Remove'));
 }
 
+/**
+ * @see uc_country_remove_form()
+ */
 function uc_country_remove_form_submit($form, &$form_state) {
   $country_id = $form_state['values']['country_id'];
 
@@ -1093,7 +1131,14 @@ function uc_country_update($country_id, $version) {
   drupal_goto('admin/store/settings/countries/edit/import');
 }
 
-// Form for enabling/weighting price alterers and selecting a price formatter.
+/**
+ * Form for enabling/weighting price alterers and selecting a price formatter.
+ *
+ * @ingroup forms
+ * @see
+ *   theme_uc_price_settings_form()
+ *   uc_price_settings_form_submit()
+ */
 function uc_price_settings_form() {
   $options = array();
   $form = array();
@@ -1133,7 +1178,7 @@ function uc_price_settings_form() {
       $description = $data['format']['title'];
 
       if (!empty($data['format']['description'])) {
-        $description .= '<div class="description">'. $data['alter']['description'] .'</div>';
+        $description .= '<div class="description">'. $data['format']['description'] .'</div>';
       }
 
       $options[$data['format']['callback']] = $description;
@@ -1154,7 +1199,7 @@ function uc_price_settings_form() {
   $form['uc_price_caching'] = array(
     '#type' => 'checkbox',
     '#title' => t('Cache generated price values until the next cron run.'),
-    '#description' => t('It may be helpful to disable caching when configuring modules that alter prices or price displays.<br />For high traffic sites with multiple price handlers, disabling this may hurt your performance.'),
+    '#description' => t('It may be helpful to disable caching while configuring modules that alter prices or price displays.') .'<br />'. t("For high traffic sites or sites with multiple price alterers, leaving this disabled may hurt the site's performance."),
     '#default_value' => variable_get('uc_price_caching', TRUE),
   );
 
@@ -1174,6 +1219,7 @@ function uc_price_settings_form() {
  * Render the price handler form, adding tabledrag.
  *
  * @ingroup themeable
+ * @see uc_price_settings_form()
  */
 function theme_uc_price_settings_form($form) {
   // Add the tabledrag to the alterer table.
@@ -1202,6 +1248,9 @@ function theme_uc_price_settings_form($form) {
   return $output;
 }
 
+/**
+ * @see uc_price_settings_form()
+ */
 function uc_price_settings_form_submit($form, &$form_state) {
   // Save the selected price formatter and price caching setting.
   variable_set('uc_price_format_callback', $form_state['values']['uc_price_format_callback']);
@@ -1221,4 +1270,3 @@ function uc_price_settings_form_submit($form, &$form_state) {
 
   drupal_set_message(t('Price handler configuration saved.'));
 }
-

@@ -1,5 +1,5 @@
 <?php
-// $Id: faq.questions_inline.inc,v 1.1.2.6 2008/12/30 17:06:49 snpower Exp $
+// $Id: faq.questions_inline.inc,v 1.1.2.8 2010/09/15 14:03:30 snpower Exp $
 
 /**
  * @file
@@ -28,14 +28,14 @@ function template_preprocess_faq_questions_inline(&$variables) {
   $variables['question_label'] = '';
   $variables['answer_label'] = '';
   if (variable_get('faq_qa_mark', FALSE)) {
-    $variables['question_label'] = variable_get('faq_question_label', "Q:");
-    $variables['answer_label'] = variable_get('faq_answer_label', "A:");
+    $variables['question_label'] = check_plain(variable_get('faq_question_label', "Q:"));
+    $variables['answer_label'] = check_plain(variable_get('faq_answer_label', "A:"));
   }
 
   $nodes = array();
   $count = 0;
   foreach ($data as $node) {
-    faq_view_question($nodes[$count], $node);
+    faq_view_question($nodes[$count], $node, NULL, 'n'. $node->nid);
     faq_view_answer($nodes[$count], $node, $back_to_top, $teaser, $links);
     $count++;
   }
@@ -94,8 +94,8 @@ function template_preprocess_faq_category_questions_inline(&$variables) {
   $variables['question_label'] = '';
   $variables['answer_label'] = '';
   if (variable_get('faq_qa_mark', FALSE)) {
-    $variables['question_label'] = variable_get('faq_question_label', "Q:");
-    $variables['answer_label'] = variable_get('faq_answer_label', "A:");
+    $variables['question_label'] = check_plain(variable_get('faq_question_label', "Q:"));
+    $variables['answer_label'] = check_plain(variable_get('faq_answer_label', "A:"));
   }
 
   // Get number of questions, and account for hidden sub-categories.

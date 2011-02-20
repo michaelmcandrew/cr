@@ -1,43 +1,49 @@
 <?php
-// $Id: uc_store.install,v 1.9.2.5 2009/04/28 21:03:14 islandusurper Exp $
+// $Id: uc_store.install,v 1.9.2.10 2010/07/12 01:28:18 tr Exp $
 
 /**
  * @file
  * Install hooks for uc_store.module.
  */
 
+/**
+ * Implementation of hook_schema().
+ */
 function uc_store_schema() {
   $schema = array();
 
   $schema['uc_countries'] = array(
+    'description' => 'Stores country information.',
     'fields' => array(
       'country_id' => array(
-        'type' => 'serial',
+        'description' => 'Primary key: numeric ISO country code.',
+        'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'country_name' => array(
+        'description' => 'The country name.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'country_iso_code_2' => array(
-        'description' => t('Two-character ISO country code.'),
+        'description' => 'The two-character ISO country code.',
         'type' => 'char',
         'length' => 2,
         'not null' => TRUE,
         'default' => '',
       ),
       'country_iso_code_3' => array(
-        'description' => t('Three-character ISO country code.'),
+        'description' => 'The three-character ISO country code.',
         'type' => 'char',
         'length' => 3,
         'not null' => TRUE,
         'default' => '',
       ),
       'version' => array(
-        'description' => t('The version of the CIF that loaded the country information.'),
+        'description' => 'The version of the CIF that loaded the country information.',
         'type' => 'int',
         'size' => 'small',
         'not null' => TRUE,
@@ -51,26 +57,30 @@ function uc_store_schema() {
   );
 
   $schema['uc_zones'] = array(
+    'description' => 'Stores state/province information within a country.',
     'fields' => array(
       'zone_id' => array(
+        'description' => 'Primary key: the unique zone id.',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
       'zone_country_id' => array(
+        'description' => 'The {uc_countries}.country_id to which this zone belongs.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'zone_code' => array(
-        'description' => t('Standard abbreviation of the zone name.'),
+        'description' => 'Standard abbreviation of the zone name.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
       ),
       'zone_name' => array(
+        'description' => 'The zone name.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -85,14 +95,17 @@ function uc_store_schema() {
   );
 
   $schema['uc_store_footers'] = array(
+    'description' => 'Maps Drupal paths to Ubercart footer messages.',
     'fields' => array(
       'path_hash' => array(
+        'description' => 'MD5 hash of the Drupal path.',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
       ),
       'message' => array(
+        'description' => 'The message displayed in the page footer.',
         'type' => 'text',
       ),
     ),
@@ -100,11 +113,14 @@ function uc_store_schema() {
   );
 
   $schema['cache_uc_price'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_uc_price']['description'] = t('Cache table for Ubercart store prices.');
+  $schema['cache_uc_price']['description'] = 'Cache table for Ubercart store prices.';
 
   return $schema;
 }
 
+/**
+ * Implementation of hook_install().
+ */
 function uc_store_install() {
   drupal_install_schema('uc_store');
   // Install United States and Canada by default.
@@ -115,6 +131,9 @@ function uc_store_install() {
   canada_install();
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function uc_store_uninstall() {
   drupal_uninstall_schema('uc_store');
 
@@ -249,6 +268,9 @@ function uc_store_update_6001() {
   return $ret;
 }
 
+/**
+ * Disable uc_recurring.
+ */
 function uc_store_update_6002() {
   $ret = array();
 
@@ -261,3 +283,50 @@ function uc_store_update_6002() {
   return $ret;
 }
 
+function uc_store_update_6003() {
+  $ret = array();
+
+  // Copy value of uc_notify_store_help_page into uc_store_help_page
+  variable_set('uc_store_help_page', variable_get('uc_notify_store_help_page', ''));
+
+  // Remove old variable uc_notify_store_help_page
+  variable_del('uc_notify_store_help_page');
+
+  $ret[] = array('success' => TRUE, 'query' => t("'uc_notify_store_help_page' renamed to 'uc_store_help_page' in variable table"));
+  return $ret;
+}
+
+/**
+ * Remove broken statistics reporting.
+ */
+function uc_store_update_6004() {
+  $ret = array();
+
+  variable_del('uc_store_last_report');
+  variable_del('uc_store_report');
+  variable_del('uc_store_site_id');
+
+  $ret[] = array('success' => TRUE, 'query' => 'Removed broken statistics reporting.');
+
+  return $ret;
+}
+
+/**
+ * Remove auto-increment from uc_countries.country_id.
+ */
+function uc_store_update_6005() {
+  $ret = array();
+
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_change_field($ret, 'uc_countries', 'country_id', 'country_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE));
+      break;
+    case 'pgsql':
+      db_drop_primary_key($ret, 'uc_countries');
+      db_change_field($ret, 'uc_countries', 'country_id', 'country_id', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE), array('primary key' => array('country_id')));
+      break;
+  }
+
+  return $ret;
+}

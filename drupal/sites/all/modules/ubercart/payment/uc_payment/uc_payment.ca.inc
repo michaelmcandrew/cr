@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_payment.ca.inc,v 1.1.2.7 2009/04/18 07:29:16 islandusurper Exp $
+// $Id: uc_payment.ca.inc,v 1.1.2.9 2009/08/17 21:27:55 islandusurper Exp $
 
 /**
  * @file
@@ -16,9 +16,11 @@
  * Implementation of hook_ca_predicate().
  */
 function uc_payment_ca_predicate() {
+  $predicates = array();
+
   // Set the order status to "Payment Received" when a payment is received
   // and the balance is less than or equal to 0.
-  $configurations['uc_payment_received'] = array(
+  $predicates['uc_payment_received'] = array(
     '#title' => t('Update order status on full payment'),
     '#description' => t('Only happens when a payment is entered and the balance is <= $0.00.'),
     '#class' => 'payment',
@@ -67,7 +69,7 @@ function uc_payment_ca_predicate() {
 
   // Set the order status to "Completed" when checkout is complete, none
   // of the products are shippable, and the balance is less than or equal to 0.
-  $configurations['uc_checkout_complete_paid'] = array(
+  $predicates['uc_checkout_complete_paid'] = array(
     '#title' => t('Update order status upon checkout completion with full payment'),
     '#trigger' => 'uc_checkout_complete',
     '#class' => 'payment',
@@ -113,7 +115,7 @@ function uc_payment_ca_predicate() {
     ),
   );
 
-  return $configurations;
+  return $predicates;
 }
 
 /**
@@ -127,6 +129,10 @@ function uc_payment_ca_trigger() {
       'order' => array(
         '#entity' => 'uc_order',
         '#title' => t('Order'),
+      ),
+      'account' => array(
+        '#entity' => 'user',
+        '#title' => t('User'),
       ),
     ),
   );
@@ -178,7 +184,7 @@ function uc_payment_condition_order_balance($order, $settings) {
 function uc_payment_condition_order_balance_form($form_state, $settings = array()) {
   $context = array(
     'revision' => 'formatted',
-    'location' => 'zero-balance',
+    'type' => 'amount',
   );
   $zero = array('!zero' => uc_price(0, $context));
   $options = array(

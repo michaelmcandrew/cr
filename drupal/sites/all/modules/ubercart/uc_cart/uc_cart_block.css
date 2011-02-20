@@ -1,4 +1,4 @@
-/* $Id: uc_cart_block.css,v 1.7.2.9 2009/04/18 07:29:17 islandusurper Exp $ */
+/* $Id: uc_cart_block.css,v 1.7.2.10 2009/07/21 14:51:20 islandusurper Exp $ */
 
 /**
  * Styles for the cart block icon.
@@ -80,15 +80,6 @@
   background-color: inherit;
   border: none;
 }
-
-/* Michael added the below */
-
-.cart-block-items td { 
-	border-bottom: solid 1px #ccc;
-	font-size: 90%;
-}
-
-/* Michael added the above */
 
 .cart-block-item-title {
   width: 100%;

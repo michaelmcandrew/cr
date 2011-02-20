@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_cart_checkout_pane.inc,v 1.5.2.5 2009/04/28 21:03:14 islandusurper Exp $
+// $Id: uc_cart_checkout_pane.inc,v 1.5.2.13 2010/07/15 17:20:09 islandusurper Exp $
 
 /**
  * @file
@@ -28,24 +28,23 @@ function uc_checkout_pane_cart($op) {
       $items = uc_cart_get_contents();
       $output = '<table>';
       $context = array(
-        'location' => 'cart-review-item',
+        'revision' => 'themed',
+        'type' => 'cart_item',
         'subject' => array(),
       );
       foreach ($items as $item) {
-        $desc = check_plain($item->title);
-        foreach (module_implements('cart_item_description') as $module) {
-          $desc .= module_invoke($module, 'cart_item_description', $item);
-        }
+        $desc = check_plain($item->title) . uc_product_get_description($item);
 
         $price_info = array(
           'price' => $item->price,
           'qty' => $item->qty,
         );
         $context['subject'] = array(
+          'cart' => $items,
           'cart_item' => $item,
           'node' => node_load($item->nid),
         );
-        $output .= '<tr valign="top"><td>'. $item->qty .'x</td><td width="100%">'. $desc
+        $output .= '<tr valign="top"><td>'. $item->qty .'&times;</td><td width="100%">'. $desc
                   .'</td><td nowrap="nowrap">'. uc_price($price_info, $context) .'</td></tr>';
       }
       $output .= '</table>';
@@ -72,7 +71,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
         );
       }
       else {
-        $description = t('Enter a valid email address for this order.', array('!url' => url('user/login')));
+        $description = t('Enter a valid email address for this order or <a href="!url">click here</a> to login with an existing account and return to checkout.', array('!url' => url('user/login')));
         $contents['primary_email'] = uc_textfield(t('E-mail address'), $email, TRUE, NULL, 64);
       }
 
@@ -175,7 +174,7 @@ function uc_checkout_pane_customer($op, &$arg1, $arg2) {
           }
           // Validate the password.
           if (variable_get('uc_cart_new_account_password', FALSE)) {
-            if ($arg2['new_account']['pass'] != $arg2['new_account']['pass_confirm']) {
+            if (strcmp($arg2['new_account']['pass'], $arg2['new_account']['pass_confirm'])) {
               drupal_set_message(t('The passwords you entered did not match. Please try again.'), 'error');
               return FALSE;
             }
@@ -435,7 +434,14 @@ function uc_checkout_pane_comments($op, &$arg1, $arg2) {
   }
 }
 
-// Theme the delivery/billing address forms in tables.
+/**
+ * Theme the delivery/billing address forms in tables.
+ *
+ * @ingroup themeable
+ * @see
+ *   uc_checkout_pane_delivery()
+ *   uc_checkout_pane_billing()
+ */
 function theme_address_pane($form) {
   $req = '<span class="form-required">*</span>';
 
@@ -526,6 +532,9 @@ function _checkout_pane_list($action = NULL) {
   }
 
   $panes = module_invoke_all('checkout_pane', NULL);
+  // Allow other modules to alter the panes.
+  drupal_alter('checkout_pane', $panes);
+
   foreach ($panes as $i => $value) {
     $panes[$i]['enabled'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_enabled', (!isset($panes[$i]['enabled']) ? TRUE : $panes[$i]['enabled']));
     $panes[$i]['weight'] = variable_get('uc_pane_'. $panes[$i]['id'] .'_weight', (!isset($panes[$i]['weight']) ? 0 : $panes[$i]['weight']));
@@ -570,33 +579,33 @@ function theme_cart_review_table($show_subtotal = TRUE) {
     array('data' => t('Price'), 'class' => 'price'),
   );
 
-  $context = array(
-    'location' => 'cart-checkout-item',
-  );
+  $context = array();
 
   // Set up table rows.
-  foreach (uc_cart_get_contents() as $item) {
+  $contents = uc_cart_get_contents();
+  foreach ($contents as $item) {
     $price_info = array(
       'price' => $item->price,
       'qty' => $item->qty,
     );
+
+    $context['revision'] = 'altered';
+    $context['type'] = 'cart_item';
     $context['subject'] = array(
+      'cart' => $contents,
       'cart_item' => $item,
       'node' => node_load($item->nid),
     );
-    $context['revision'] = 'altered';
 
     $total = uc_price($price_info, $context);
     $subtotal += $total;
 
-    $description = check_plain($item->title);
-    foreach (module_implements('cart_item_description') as $module) {
-      $description .= module_invoke($module, 'cart_item_description', $item);
-    }
+    $description = check_plain($item->title) . uc_product_get_description($item);
 
     // Remove node from context to prevent the price from being altered.
-    unset($context['subject']);
     $context['revision'] = 'themed-original';
+    $context['type'] = 'amount';
+    unset($context['subject']);
     $rows[] = array(
       array('data' => t('@qty&times;', array('@qty' => $item->qty)), 'class' => 'qty'),
       array('data' => $description, 'class' => 'products'),
@@ -608,14 +617,13 @@ function theme_cart_review_table($show_subtotal = TRUE) {
   if ($show_subtotal) {
     $context = array(
       'revision' => 'themed-original',
-      'location' => 'cart-checkout-subtotal',
+      'type' => 'amount',
     );
     $rows[] = array(
-      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 4, 'class' => 'subtotal')),
+      'data' => array(array('data' => '<span id="subtotal-title">' . t('Subtotal:') . '</span> ' . uc_price($subtotal, $context), 'colspan' => 3, 'class' => 'subtotal')),
       'class' => 'subtotal',
     );
   }
 
   return theme('table', $header, $rows, array('class' => 'cart-review'));
 }
-

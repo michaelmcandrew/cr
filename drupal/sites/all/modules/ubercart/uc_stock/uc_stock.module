@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_stock.module,v 1.12.2.11 2009/02/27 22:41:33 islandusurper Exp $
+// $Id: uc_stock.module,v 1.12.2.24 2010/07/12 01:28:19 tr Exp $
 
 /**
  * @file
@@ -11,7 +11,7 @@
  * current stock level. Store admins can view all stock levels in the reports
  * section of Ubercart.
  *
- * Development sponsored by the Ubercart project.  http://www.ubercart.org
+ * Development sponsored by the Ubercart project. http://www.ubercart.org
  */
 
 require_once('uc_stock.ca.inc');
@@ -25,7 +25,7 @@ require_once('uc_stock.ca.inc');
  */
 function uc_stock_help($path, $arg) {
   switch ($path) {
-    case 'node/%/edit/uc-stock':
+    case 'node/%/edit/stock':
       return t('To keep track of stock for a particular product SKU, make sure it is marked as active and enter a stock value. When the stock level drops below the threshold value, you can be notified based on your stock settings.');
     case 'admin/store/reports/stock':
     case 'admin/store/reports/stock/threshold':
@@ -56,11 +56,12 @@ function uc_stock_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'uc_stock.admin.inc',
   );
-  $items['node/%node/edit/uc-stock'] = array(
+  $items['node/%node/edit/stock'] = array(
     'title' => 'Stock',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_stock_edit_form', 1),
-    'access arguments' => array('administer product stock'),
+    'access callback' => 'uc_stock_product_access',
+    'access arguments' => array(1),
     'weight' => 10,
     'type' => MENU_LOCAL_TASK,
     'file' => 'uc_stock.admin.inc',
@@ -68,10 +69,27 @@ function uc_stock_menu() {
   return $items;
 }
 
+/**
+ * Access callback for node/%node/edit/stock.
+ */
+function uc_stock_product_access($node) {
+  if ($node->type == 'product_kit') {
+    return FALSE;
+  }
+
+  return uc_product_is_product($node) && node_access('update', $node) && user_access('administer product stock');
+}
+
+/**
+ * Implementation of hook_perm().
+ */
 function uc_stock_perm() {
   return array('administer product stock');
 }
 
+/**
+ * Implementation of hook_theme().
+ */
 function uc_stock_theme() {
   return array(
     'uc_stock_edit_form' => array(
@@ -79,6 +97,15 @@ function uc_stock_theme() {
       'file' => 'uc_stock.admin.inc',
     ),
   );
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function uc_stock_init() {
+  global $conf;
+  $conf['i18n_variables'][] = 'uc_stock_threshold_notification_message';
+  $conf['i18n_variables'][] = 'uc_stock_threshold_notification_subject';
 }
 
 /**
@@ -134,12 +161,6 @@ function uc_stock_uc_message() {
   return $messages;
 }
 
-
-/******************************************************************************
- * Callback Functions, Forms, and Tables                                      *
- ******************************************************************************/
-
-
 /******************************************************************************
  *  Module and Helper Functions                                               *
  ******************************************************************************/
@@ -152,19 +173,60 @@ function uc_stock_uc_message() {
  * @param $qty
  *   The amount to add to or subtract from the stock level.
  */
-function uc_stock_adjust($sku, $qty) {
+function uc_stock_adjust($sku, $qty, $check_active = TRUE) {
+  $stock = db_fetch_object(db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+
+  if ($check_active) {
+    if (!$stock->active) {
+      return;
+    }
+  }
+
   db_query("UPDATE {uc_product_stock} SET stock = stock + %d WHERE sku = '%s'", $qty, $sku);
+
+  module_invoke_all('uc_stock_adjusted', $sku, $stock->stock, $qty);
 }
 
 /**
- * Get the stock level of a particular product SKU
+ * Set the product stock level.
+ *
+ * @param $sku
+ *   The product SKU of the stock level to set.
+ * @param $qty
+ *   The number of items in stock.
+ */
+function uc_stock_set($sku, $qty) {
+  db_query("UPDATE {uc_product_stock} SET stock = %d WHERE sku = '%s'", $qty, $sku);
+}
+
+/**
+ * Get the stock level of a particular product SKU.
+ *
  * @param $sku
  *   The Ubercart product SKU of the stock level to return.
  * @return:
- *   The associated stock level with the particular SKU or FALSE if not active.
+ *   The SKU's stock level, or FALSE if not active.
  */
 function uc_stock_level($sku) {
-  return db_result(db_query("SELECT stock FROM {uc_product_stock} WHERE sku = '%s' AND active = 1", $sku));
+  $stock = db_fetch_object(db_query("SELECT active, stock FROM {uc_product_stock} WHERE sku = '%s'", $sku));
+
+  if ($stock && $stock->active) {
+    return $stock->stock;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Check if a sku has an active stock record.
+ *
+ * @param $sku
+ *   The Ubercart product SKU to check
+ * @return (bool)
+ *   Whether or not the sku has an active stock record.
+ */
+function uc_stock_is_active($sku) {
+  return (bool) db_result(db_query("SELECT active FROM {uc_product_stock} WHERE sku = '%s'", $sku));
 }
 
 /**
@@ -184,6 +246,8 @@ function _uc_stock_send_mail($order, $stock) {
   $account = user_load(array('uid' => $order));
 
   $to = variable_get('uc_stock_threshold_notification_recipients', variable_get('uc_store_email', ini_get('sendmail_from')));
+  $to = explode(',', $to);
+
   $from = uc_store_email_from();
 
   $subject = variable_get('uc_stock_threshold_notification_subject', uc_get_message('uc_stock_threshold_notification_subject'));
@@ -192,125 +256,67 @@ function _uc_stock_send_mail($order, $stock) {
   $body = variable_get('uc_stock_threshold_notification_message', uc_get_message('uc_stock_threshold_notification_message'));
   $body = token_replace_multiple($body, $token_filters);
 
-  return drupal_mail('uc_stock', 'threshold', $to, user_preferred_language($account), array('body' => $body, 'subject' => $subject) , $from, TRUE);
+  // Send to each recipient.
+  foreach ($to as $email) {
+    $sent = drupal_mail('uc_stock', 'threshold', $email, uc_store_mail_recipient_language($email), array('body' => $body, 'subject' => $subject), $from);
+
+    if (!$sent['result']) {
+      watchdog('uc_stock', 'Attempt to e-mail @email concerning stock level on sku @sku failed.', array('@email' => $email, '@sku' => $stock->sku), WATCHDOG_ERROR);
+    }
+  }
 }
 
 /**
- * Implementation of hook_views_tables().
+ * Implementation of hook_views_api().
  */
-function uc_stock_views_tables() {
-  $tables['uc_product_stock'] = array(
-    'name' => 'uc_product_stock',
-    'join' => array(
-      'left' => array(
-        'table' => 'node',
-        'field' => 'nid'
-      ),
-      'right' => array(
-        'field' => 'nid',
-      ),
-    ),
-    'fields' => array(
-      'sku' => array(
-        'name' => t('Stock: SKU'),
-        'help' => t('The model or SKU of the stock level'),
-        'sortable' => TRUE,
-      ),
-      'active' => array(
-        'name' => t('Stock: Active'),
-        'help' => t('Whether or not the stock level is currently being tracked'),
-        'handler' => 'uc_stock_views_handler_active',
-        'sortable' => TRUE,
-      ),
-      'stock' => array(
-        'name' => t('Stock: Stock Level'),
-        'help' => t('The current stock level'),
-        'sortable' => TRUE,
-      ),
-      'threshold' => array(
-        'name' => t('Stock: Threshold'),
-        'help' => t('The threshold or warning limit of the stock level'),
-        'sortable' => TRUE,
-      ),
-    ),
-    'sorts' => array(
-      'sku' => array(
-        'name' => t('Stock: SKU'),
-      ),
-      'stock' => array(
-        'name' => t('Stock: Stock Level'),
-        'help' => t('The current stock level'),
-      ),
-      'threshold' => array(
-        'name' => t('Stock: Threshold'),
-        'help' => t('The threshold or warning limit of the stock level'),
-      ),
-    ),
-    'filters' => array(
-      'sku' => array(
-        'name' => 'Stock: SKU',
-        'operator' => 'views_handler_operator_like',
-        'handler' => 'views_handler_filter_like',
-        'help' => t('Filter the node based on stock SKU.'),
-      ),
-      'stock' => array(
-        'name' => 'Stock: Stock Level',
-        'operator' => 'views_handler_operator_gtlt',
-        'help' => t('Filter the node based on stock level.'),
-      ),
-      'threshold' => array(
-        'name' => 'Stock: Threshold',
-        'operator' => 'views_handler_operator_gtlt',
-        'help' => t('Filter the node based on threshold level.'),
-      ),
-      'is_active' => array(
-        'name' => 'Stock: Is Active',
-        'operator' => array('=' => 'Equals'),
-        'list' => 'views_handler_operator_yesno',
-        'list-type' => 'select',
-        'handler' => 'uc_stock_views_handler_filter_is_active',
-        'help' => t('Filter the data based on whether or not stock tracking is active for the SKU.'),
-      ),
-      'below_threshold' => array(
-        'name' => 'Stock: Is Below Threshold',
-        'operator' => array('=' => 'Equals'),
-        'list' => 'views_handler_operator_yesno',
-        'list-type' => 'select',
-        'handler' => 'uc_stock_views_handler_filter_below_threshold',
-        'help' => t('Filter the node based on whether it stock level is below the threshold for the SKU.'),
-      ),
-    ),
+function uc_stock_views_api() {
+  return array(
+    'api' => '2.0',
+    'path' => drupal_get_path('module', 'uc_stock') .'/views',
   );
-
-  return $tables;
 }
 
-function uc_stock_views_handler_active($fieldinfo, $fielddata, $value, $data) {
-  return $value ? t('Active') : t('Inactive');
+/**
+ * Deprecated. Wrapper function for uc_stock_adjust_product_stock().
+ *
+ * Keeps backwards compatibility with contributed modules.
+ */
+function uc_stock_decrement_product_stock($product, $key, $order) {
+  return uc_stock_adjust_product_stock($product, $key, $order);
 }
 
-function uc_stock_views_handler_filter_below_threshold($op, $filter, $filterinfo, &$query) {
-  if ($op == 'handler') {
-    if ($filter['value'] == 0) {
-      $operator = '>=';
-    }
-    else {
-      $operator = '<';
-    }
-    $query->add_where('uc_product_stock.stock  '. $operator .' uc_product_stock.threshold');
+/**
+ * Adjust a product's stock.
+ *
+ * @param $product
+ *   The product whose stock is being adjusted.
+ * @param $key
+ *   Internal, so this function can be used as a callback of array_walk().
+ * @param $order
+ *   Order object.
+ */
+function uc_stock_adjust_product_stock($product, $key, $order) {
+  // Product has an active stock?
+  if (!uc_stock_is_active($product->model)) {
+    return;
   }
-}
 
-function uc_stock_views_handler_filter_is_active($op, $filter, $filterinfo, &$query) {
-  if ($op == 'handler') {
-    if ($filter['value'] == 1) {
-      $active = '1';
-    }
-    else {
-      $active = '0';
-    }
-    $query->ensure_table('uc_product_stock');
-    $query->add_where('uc_product_stock.active = '. $active);
+  // Do nothing if decrement quantity is 0
+  if ($product->qty == 0) {
+    return;
   }
-}
 
+  // Adjust the product's stock.
+  uc_stock_adjust($product->model, -$product->qty);
+
+  // Load the new stock record
+  $stock = db_fetch_object(db_query("SELECT * FROM {uc_product_stock} WHERE sku = '%s'", $product->model));
+
+  // Should we notify?
+  if (variable_get('uc_stock_threshold_notification', FALSE) && $stock->stock <= $stock->threshold) {
+    _uc_stock_send_mail($order, $stock);
+  }
+
+  // Save a comment about the stock level.
+  uc_order_comment_save($order->order_id, 0, t('The stock level for %model_name has been !action to !qty.', array('%model_name' => $product->model, '!qty' => $stock->stock, '!action' => (-$product->qty <= 0) ? t('decreased') : t('increased') )));
+}

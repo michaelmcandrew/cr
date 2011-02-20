@@ -1,5 +1,5 @@
 <?php
-// $Id: uc_ups.admin.inc,v 1.1.2.8 2009/04/28 21:03:16 islandusurper Exp $
+// $Id: uc_ups.admin.inc,v 1.1.2.18 2010/07/12 01:57:35 tr Exp $
 
 /**
  * @file
@@ -141,6 +141,8 @@ function uc_ups_admin_settings() {
  * Validation handler for uc_ups_admin_settings.
  *
  * Require password only if it hasn't been set.
+ *
+ * @see uc_ups_admin_settings()
  */
 function uc_ups_admin_settings_validate($form, &$form_state) {
   $old_password = variable_get('uc_ups_password', '');
@@ -151,6 +153,10 @@ function uc_ups_admin_settings_validate($form, &$form_state) {
     else {
       form_set_error('uc_ups_password', t('Password field is required.'));
     }
+  }
+
+  if (!is_numeric($form_state['values']['uc_ups_markup'])) {
+    form_set_error('uc_ups_markup', t('Rate markup must be a numeric value.'));
   }
 }
 
@@ -170,6 +176,9 @@ function uc_ups_confirm_shipment($order) {
 
 /**
  * Display final shipment information for review.
+ *
+ * @ingroup themeable
+ * @see uc_ups_confirm_shipment()
  */
 function theme_uc_ups_confirm_shipment($form) {
   $output = '';
@@ -207,11 +216,8 @@ function theme_uc_ups_confirm_shipment($form) {
   $method = uc_ups_shipping_method();
   $output .= '<b>'. $method['ups']['quote']['accessorials'][$_SESSION['ups']['service']] .'</b><br />';
   $context = array(
-    'location' => 'shipping-ups-confirm',
-    'subject' => array(
-      'ups_info' => $_SESSION['ups'],
-      'field' => 'amount',
-    ),
+    'revision' => 'themed',
+    'type' => 'amount',
   );
   $output .= '<i>'. check_plain($_SESSION['ups']['rate']['type']) .'</i>: '. uc_price($_SESSION['ups']['rate']['amount'], $context) .' ('. check_plain($_SESSION['ups']['rate']['currency']) .')<br />';
   $ship_date = $_SESSION['ups']['ship_date'];
@@ -224,9 +230,9 @@ function theme_uc_ups_confirm_shipment($form) {
 }
 
 /**
- * Submit handler for uc_ups_confirm_shipment().
- *
  * Generate label and schedule pickup of the shipment.
+ *
+ * @see uc_ups_confirm_shipment()
  */
 function uc_ups_confirm_shipment_submit($form, &$form_state) {
   // Request pickup using parameters in form.
@@ -280,7 +286,7 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
       if ($label_file = fopen($label_path, 'wb')) {
         fwrite($label_file, base64_decode($label_image));
         fclose($label_file);
-        $package->label_image = $label_path;
+        $package->label_image = 'ups_labels/'. basename($label_path);
       }
       else {
         drupal_set_message(t('Could not open a file to save the label image.'), 'error');
@@ -300,6 +306,45 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
 }
 
 /**
+ * Construct an XML label and pickup request.
+ *
+ * @param $digest
+ *   Base-64 encoded shipment request.
+ * @param $order_id
+ *   The order id of the shipment.
+ * @param $packages
+ *   An array of package ids to be shipped.
+ * @return
+ *   ShipmentAcceptRequest XML document to send to UPS.
+ */
+function uc_ups_request_pickup($digest, $order_id = 0, $packages = array()) {
+  $packages = (array)$packages;
+
+  $schema = uc_ups_access_request();
+  $schema .= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<ShipmentAcceptRequest>
+  <Request>
+    <RequestAction>ShipAccept</RequestAction>";
+    if ($order_id || count($packages)) {
+      $schema .= "\n<TransactionReference>
+      <CustomerContext>";
+      if ($order_id) {
+        $schema .= "<OrderId>". $order_id ."</OrderId>\n";
+      }
+      foreach ($packages as $pkg_id) {
+        $schema .= "<PackageId>". $pkg_id ."</PackageId>\n";
+      }
+      $schema .= "</CustomerContext>\n</TransactionReference>\n";
+    }
+  $schema .= "  </Request>
+  <ShipmentDigest>". $digest ."</ShipmentDigest>
+</ShipmentAcceptRequest>";
+
+  //drupal_set_message('<pre>'. htmlentities($schema) .'</pre>');
+  return $schema;
+}
+
+/**
  * Display the shipping label for printing.
  *
  * Each argument is a component of the file path to the image.
@@ -308,13 +353,18 @@ function uc_ups_confirm_shipment_submit($form, &$form_state) {
  */
 function theme_uc_ups_label_image() {
   $args = func_get_args();
-  $image_path = implode('/', $args);
-  print '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
-<html><head><title>
-View/Print Label</title></head><style>
-    .small-text {font-size: 80%;}
-    .large-text {font-size: 115%;}
+  $image_path = file_create_url(implode('/', $args));
+
+  $output = <<<EOLABEL
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html>
+<head>
+<title>View/Print Label</title>
+<style>
+  .small-text {font-size: 80%;}
+  .large-text {font-size: 115%;}
 </style>
+</head>
 <body bgcolor="#FFFFFF">
 <table border="0" cellpadding="0" cellspacing="0" width="600"><tr>
 <td height="410" align="left" valign="top">
@@ -335,7 +385,7 @@ Your driver will pickup your shipment(s) as usual. </ul>
 FOLD HERE</td>
 </tr>
 <tr>
-<td align="left" valign="top"><hr>
+<td align="left" valign="top"><hr />
 </td>
 </tr>
 </table>
@@ -349,30 +399,13 @@ FOLD HERE</td>
 
 <table border="0" cellpadding="0" cellspacing="0" width="650" ><tr>
 <td align="left" valign="top">
-<img src="'. base_path() . $image_path .'" height="392" width="672">
+<img src="$image_path" height="392" width="672">
 </td>
 </tr></table>
 </body>
-</html>';
+</html>
+EOLABEL;
 
+  print $output;
   exit();
-}
-
-
-/**
- * Theme function to format the UPS service name and rate amount line-item shown
- *   to the customer.
- *
- * @param $service
- *   The UPS service name.
- * @ingroup themeable
- */
-function theme_uc_ups_option_label($service) {
-  // Start with logo as required by the UPS terms of service.
-  $output = '<img class="ups-logo" src="'. url(drupal_get_path('module', 'uc_ups')) .'/uc_ups_logo.gif" alt="'. t('UPS Logo') .'" /> ';
-
-  // Add the UPS service name.
-  $output .= t('@service Rate', array('@service' => $service));
-
-  return $output;
 }
