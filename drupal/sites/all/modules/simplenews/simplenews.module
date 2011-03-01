@@ -285,6 +285,16 @@ function simplenews_menu() {
     'file' => 'simplenews.subscription.inc',
   );
 
+   $items['admin/content/simplenews/users/invite'] = array(
+     'title' => 'Invite',
+     'type' => MENU_LOCAL_TASK,
+     'page callback' => 'drupal_get_form',
+     'page arguments' => array('simplenews_invite'),
+     'access arguments' => array('administer simplenews subscriptions'),
+     'weight' => -9,
+  );
+
+
   return $items;
 }
 
@@ -993,7 +1003,7 @@ function _simplenews_user_load($mail) {
  *   Use '' for the site default language.
  *   Use NULL for the language of the current page.
  */
-function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_language = NULL) {
+function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_language = NULL, $mmmessage = NULL) {
   global $language;
 
   //Prevent mismatches from accidental capitals in mail address
@@ -1039,7 +1049,12 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_lang
     $params['from'] = _simplenews_set_from();
     $params['context']['newsletter'] = taxonomy_get_term($tid);
     $params['context']['account'] = $subscription;
-    drupal_mail('simplenews', 'subscribe', $mail, $subscription->language, $params, $params['from']['address']);
+ 	if(isset($mmmessage)){
+ 		$params['context']['invite_text']=$mmmessage;
+ 		drupal_mail('simplenews', 'invite', $mail, $subscription->language, $params, $params['from']['address']);
+ 	} else {
+     	drupal_mail('simplenews', 'subscribe', $mail, $subscription->language, $params, $params['from']['address']);
+ 	}
   }
   elseif (!isset($subscription->tids[$tid])) {
     // OR add user to newsletter relationship if not already subscribed.
@@ -1342,7 +1357,7 @@ function simplenews_block_form(&$form_state, $tid) {
   $form['#submit'][] = 'simplenews_block_form_submit';
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => isset($submit_text) ? $submit_text : t('Save')
+    '#value' => isset($submit_text) ? $submit_text : t('Subscribe')
   );
   return $form;
 }
@@ -1665,6 +1680,14 @@ function simplenews_mail($key, &$message, $params) {
         $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_unsubscribed', $context['account']->language, $variables);
       }
       break;
+    case 'invite':
+	     	// Use formatted from address "name" <mail_address>
+	  $message['headers']['From'] = $params['from']['formatted'];
+	  $variables =  simplenews_mail_tokens($context['account'], $context, is_object($context['account']->language) ? $context['account']->language : language_default());
+	  $message['subject'] = _simplenews_subscription_confirmation_text('invite_subject', $context['account']->language, $variables);
+	  $message['body'] = $context['invite_text']."\n\n"._simplenews_subscription_confirmation_text('invite', $context['account']->language, $variables);
+	  break;
+
   }
 
   // Debug message to check for outgoing emails messages.
@@ -2374,6 +2397,10 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
         return t("We have received a request to unsubscribe !mailto from the !newsletter_name on !site website at !uri. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: !uri", $variables, $langcode);
       case 'subscribe_subject':
         return t("Confirmation for !newsletter_name from !site", $variables, $langcode);
+	  case 'invite':
+		return t("To subscribe to our newsletter, please use the link below.\n\n!confirm_subscribe_url", $variables, $langcode);
+	  case 'invite_subject':
+		return t("Subscribe to the Carbon Retirement newsletter", $variables, $langcode);
     }
   }
 }
@@ -2538,3 +2565,68 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), $variables['language']->language);
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), $variables['language']->language);
 }
+
+function michael_invite($mail, $message) {
+  simplenews_subscribe_user($mail, 28, TRUE, NULL, $message);
+}
+
+function simplenews_invite() {
+	global $language;
+
+	$form['emails'] = array(
+		'#type' => 'textarea',
+		'#title' => t('Email addresses'),
+		'#cols' => 60,
+		'#rows' => 5,
+		'#required' => TRUE,
+		'#description' => t('Email addresses must be separated by comma, space or newline.'),
+	);
+	$newsletters = array();
+		foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
+		$newsletters[$newsletter->tid] = check_plain($newsletter->name);
+	}
+	$form['message'] = array(
+		'#type' => 'textarea',
+		'#title' => t('Message'),
+		'#cols' => 60,
+		'#rows' => 5,
+		'#required' => TRUE,
+		'#description' => t('Type a message that will be displayed in the email.'),
+	);
+
+
+	$form['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Invite'),
+	);
+	return $form;
+}
+
+function simplenews_invite_submit($form, &$form_state) {
+	$tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
+	$added = array();
+	$invalid = array();
+	$emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
+	foreach ($emails as $email) {
+		$email = trim($email);
+		if (valid_email_address($email)) {
+			michael_invite($email, $form_state['values']['message']);
+			$added[] = $email;
+		}
+		else {
+			$invalid[] = $email;
+		}
+	}
+	if ($added) {
+		$added = implode(", ", $added);
+		drupal_set_message(t('The following addresses were invited: %added.', array('%added' => $added)));
+	}
+	else {
+		drupal_set_message(t('No addresses were added.'));
+	}
+	if ($invalid) {
+		$invalid = implode(", ", $invalid);
+		drupal_set_message(t('The following addresses were invalid: %invalid.', array('%invalid' => $invalid)), 'error');
+	}
+}
+

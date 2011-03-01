@@ -18,5 +18,8 @@
  * @see template_preprocess_simplenews_newsletter_body()
  */
 ?>
-<h2><?php print $title; ?></h2>
+<table><tr><td align="center" width="100%">
+<table width="580"><tr><td width="580">
 <?php print $body; ?>
+</td></tr></table>
+</td></tr></table>
