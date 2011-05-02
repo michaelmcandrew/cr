@@ -1,0 +1,13 @@
+name = CR2
+description = new theme for Carbon Retirement
+core = 6.x
+engine = phptemplate
+stylesheets[all][] = style.css
+
+regions[left] = Left sidebar
+regions[right] = Right sidebar
+regions[hp_links] = Homepage links
+regions[inside_links] = Inside links
+regions[footer] = Footer
+
+
