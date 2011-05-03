@@ -390,7 +390,7 @@ object {
 	border: 1px solid #c6cdd4;
 }
 
-#rightCol p {
+#rightCol p, .block-uc_cart .content{
 	padding: 6px;
 	margin: 0;
 }
