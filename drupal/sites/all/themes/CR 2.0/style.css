@@ -132,7 +132,7 @@ h2 {
 	color: #ABB037;
 }
 
-#leftCol .block-simplenews p {
+#leftCol #block-block-11 p {
 	display: block;
 	font-size: 0.9em;
 	color: #6f7062;
@@ -153,6 +153,7 @@ h2 {
 input#edit-mail {
 	width: 134px;
 	height: 20px;
+	padding: 1px 3px;
 	border: 1px solid #abb037;
 }
 
@@ -259,7 +260,6 @@ h3 {
 object {
 	width: 264px;
 	height: 201px;
-	float: right;
 	overflow: hidden;
 	border: 1px solid #ABB037;
 }
@@ -400,7 +400,7 @@ object {
 }
 
 #rightCol p, .block-uc_cart .content{
-	padding: 6px;
+	padding: 6px 4px;
 	margin: 0;
 }
 
