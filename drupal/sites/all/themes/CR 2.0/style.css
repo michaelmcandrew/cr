@@ -35,7 +35,8 @@ body
 	font-size: 0.75em;
 	text-align: center;
 	color: #58585a;
-	background: #f1f1f1 url(images/arrow-big-2.png) no-repeat center 0;
+	background-color: #f1f1f1;
+	/*background: #f1f1f1 url(images/arrow-big-2.png) no-repeat center 0;*/
 }
 
 #wrapper {
