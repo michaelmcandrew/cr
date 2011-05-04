@@ -130,11 +130,11 @@
 				<div id="rightCol">
 					<?php print $right; ?>
 				</div>			
+				<div class="clear"></div>
+			</div>
 			<div id="footer">
 				<span><?php print $footer_message; ?></span>
-			</div>
-			<div class="clear"></div>
-		</div>	
+			</div>	
 		<?php print $closure; ?>
 	</body>
 </html>
