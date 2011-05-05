@@ -4,6 +4,7 @@ core = 6.x
 engine = phptemplate
 stylesheets[all][] = style.css
 
+regions[nav] = Primary links
 regions[left] = Left sidebar
 regions[right] = Right sidebar
 regions[hp_links] = Homepage links

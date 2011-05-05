@@ -1,6 +1,7 @@
 <?php
 function mytheme_regions() {
   return array(
+	'nav' => t('primary links'),
 	'left' => t('left sidebar'),
     'right' => t('right sidebar'),
     'content' => t('content'),
