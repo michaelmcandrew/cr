@@ -184,6 +184,10 @@ input.form-submit {
 	border-right: 1px solid #a0b5c6;
 }
 
+#nav ul.nice-menu {
+	background-color: #90a7bb;
+}
+
 #nav ul.nice-menu a {
 	padding: 10px 30px;
 	display: inline-block;
