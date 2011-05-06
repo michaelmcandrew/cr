@@ -4,10 +4,11 @@ function mytheme_regions() {
 	'nav' => t('primary links'),
 	'left' => t('left sidebar'),
     'right' => t('right sidebar'),
-    'content' => t('content'),
-    'footer' => t('footer'),
-    'hp_links' => t('homepage links'),
+	'hp_links' => t('homepage links'),
 	'inside_links' => t('inside links'),
+    'content' => t('content'),
+	'continue_shopping' => t('continue shopping button'),
+    'footer' => t('footer'),  
   );
 }
 

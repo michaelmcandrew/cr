@@ -123,6 +123,7 @@
 					<div id="contentWrap">
 						<?php if (!empty($title)): ?><h3 class="title" id="page-title"><?php print $title; ?></h3><?php endif; ?>					
 						<?php print $content; ?>
+						<?php print $continue_shopping; ?>
 					</div>
 					<div id="hpLinks">
 						<?php print $hp_links; ?>
