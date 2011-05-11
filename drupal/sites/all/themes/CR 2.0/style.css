@@ -27,7 +27,6 @@ html, body, h1, h2, h3, h4, h5, h6, ul, .block ul {
 ul, .block ul, li, .item-list ul li
 {
 	list-style: none outside none;
-        z-index: 100;
 }
 
 body
@@ -201,10 +200,11 @@ input.form-submit {
 
 #nav li.menuparent ul { 
 	background-color: #90a7bb;
-	/*position: absolute;
-	top: 31px;
-	left: 0;*/
+	position: absolute;
+	top: 41px;
+	left: 0;
 	border-top: 1px solid #fff;
+        z-index: 100;
 }
 
 #nav li.menuparent ul li { 
