@@ -37,7 +37,7 @@ body
 	color: #58585a;
 	background-color: #f1f1f1;
 	/*background: #f1f1f1 url(images/arrow-big-2.png) no-repeat center 0;*/
-	background: #f1f1f1 url(images/arrow-big-2.png) repeat-y center 0;
+	background: #f1f1f1 url(images/arrow-big.png) repeat-y center 0;
 }
 
 #wrapper {
@@ -523,11 +523,11 @@ select#edit-tid {
 
 .jcarousel-skin-default .jcarousel-clip-horizontal,
 .jcarousel-skin-default .jcarousel-container-horizontal {
-	width: 120px;
+	width: 132px;
 }
 
 .jcarousel-skin-default .jcarousel-container-horizontal {
-	padding: 14px;
+	padding: 8px;
 	height: auto;
 }
 
@@ -542,22 +542,7 @@ select#edit-tid {
 
 .jcarousel-skin-default .jcarousel-next, 
 .jcarousel-skin-default .jcarousel-prev {
-	background: url(images/arrow-left.png) no-repeat 0 0;
-	display: block;
-	height: 20px;
-	width: 12px;
-	position: absolute;
-	top: 55px;
-	left: 2px;
-}
-
-.jcarousel-skin-default .jcarousel-next-horizontal {
-	background: url(images/arrow-right.png) no-repeat 0 0;
-	left: 134px;
-}
-
-.jcarousel-skin-default .jcarousel-next-horizontal:hover {
-	background-position: 0 0;
+	background: 0 none;
 }
 
 #footer {
