@@ -93,7 +93,7 @@ h1 a {
 	padding-bottom: 15px;
 }
 
-h2, #nav li a, #hpLinks li a span, #pageLinks li a span{	
+#leftCol h2, #rightCol h2, #nav li a, #hpLinks li a span, #pageLinks li a span{	
 	color: #fff;	
 	text-transform: uppercase;
 	font-weight: normal;
@@ -102,7 +102,7 @@ h2, #nav li a, #hpLinks li a span, #pageLinks li a span{
 	letter-spacing: 0.05em;
 }
 
-h2 { 
+#leftCol h2, #rightCol h2 { 
 	padding: 2px 6px;
 	background-color: #abb037;
 	font-size: 1em;
@@ -204,7 +204,7 @@ input.form-submit {
 	top: 41px;
 	left: 0;
 	border-top: 1px solid #fff;
-        z-index: 100;
+    z-index: 100;
 }
 
 #nav li.menuparent ul li { 
@@ -236,7 +236,7 @@ input.form-submit {
 	position: relative;
 }
 
-#contentWrap, #rightCol {
+#main, #rightCol {
 	background-color: #fff;
 }
 
@@ -262,7 +262,9 @@ input.form-submit {
 	line-height: 1.6em;
 }
 
-#page-front #contentWrap p object {
+#page-front #contentWrap p iframe {
+	width: 264px;
+	height: 201px;
 	float: right;
 }
 
@@ -295,9 +297,7 @@ h3 {
 	text-transform: uppercase;
 }
 
-object {
-	width: 264px;
-	height: 201px;
+iframe {
 	overflow: hidden;
 	border: 1px solid #ABB037;
 }
@@ -442,6 +442,20 @@ object {
 	margin: 0;
 }
 
+.section-blogs .node { 
+	margin: 12px 0;
+	padding-bottom: 12px;
+	border-bottom: 1px dashed #B7BC55;
+}
+
+.section-blogs h2 {
+	font-size: 1.2em;
+}
+
+.section-blogs h3 {
+	margin-bottom: 8px;
+}
+
 p.greenText {
 	color: #aca83d;
 	font-size: 0.96em;
@@ -507,6 +521,45 @@ select#edit-tid {
 	margin-top: 4px;
 }
 
+.jcarousel-skin-default .jcarousel-clip-horizontal,
+.jcarousel-skin-default .jcarousel-container-horizontal {
+	width: 120px;
+}
+
+.jcarousel-skin-default .jcarousel-container-horizontal {
+	padding: 14px;
+	height: auto;
+}
+
+.jcarousel-skin-default .jcarousel-item-horizontal {
+	margin: 0;
+}
+
+.jcarousel-skin-default .jcarousel-item  {
+	border: 0 none;
+	height: auto;
+}
+
+.jcarousel-skin-default .jcarousel-next, 
+.jcarousel-skin-default .jcarousel-prev {
+	background: url(images/arrow-left.png) no-repeat 0 0;
+	display: block;
+	height: 20px;
+	width: 12px;
+	position: absolute;
+	top: 55px;
+	left: 2px;
+}
+
+.jcarousel-skin-default .jcarousel-next-horizontal {
+	background: url(images/arrow-right.png) no-repeat 0 0;
+	left: 134px;
+}
+
+.jcarousel-skin-default .jcarousel-next-horizontal:hover {
+	background-position: 0 0;
+}
+
 #footer {
 	width: 100%;
 	height: 25px;
@@ -518,7 +571,6 @@ select#edit-tid {
 	float: left;
 	text-align: center;
 	color: #999b9d;
-	font-family: Times, serif;
 }
 
 
