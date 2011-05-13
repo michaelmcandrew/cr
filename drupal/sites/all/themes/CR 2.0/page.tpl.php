@@ -103,14 +103,8 @@
 			</div>
 			<div id="rightSide">
 				<div id="nav">
-					<!-- <?php print theme('links', $primary_links, array('class' => 'links primary-links')); ?> -->
 					<?php print $nav; ?>
 				</div>
-				<!-- 
-				<div id="breadcrumb">
-					<?php //print $breadcrumb; ?>
-				</div>
-				-->
 				<div id="main">
 					<!--drupal features-->
 			          <?php if (!empty($tabs)): ?><div class="tabs"><?php print $tabs; ?></div><?php endif; ?>

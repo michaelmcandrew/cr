@@ -189,13 +189,15 @@ input.form-submit {
 	display: inline-block;
 }
 
-#nav ul.nice-menu a:hover {
+#nav ul.nice-menu a:hover,
+#nav li.menuparent ul li a:hover {
 	text-decoration: none;
+	background-color: #AEBFCF;
 }
 
 #nav li.menuparent a {
-	background: url(images/nav-arrow.png) no-repeat right center;
-	margin-right: 15px;
+	background:url(images/nav-arrow.png) no-repeat scroll 90% center transparent;
+	padding-right:35px;
 }
 
 #nav li.menuparent ul { 
@@ -221,11 +223,6 @@ input.form-submit {
 	display: block;
 	font-size: 1.1em;
 	text-transform: none;
-}
-
-#nav li.menuparent ul li a:hover {
-	background-color: #abb037;
-	/*background-color: #bbd5eb;*/
 }
 
 #main {
@@ -433,7 +430,7 @@ iframe {
 #rightCol {
 	width: 148px;
 	float: left;
-	color: #A7A9AB;
+	color: #6F7062;
 	border: 1px solid #c6cdd4;
 }
 
@@ -469,6 +466,16 @@ thead th, td, td.price {
 
 thead th {
 	border-bottom: 2px solid #ccc;
+}
+
+.view-clients td {
+	padding: 15px;
+}
+
+td.cart-block-item-qty {
+	padding: 0;
+	display: none;
+	visibility: hidden;
 }
 
 tr {

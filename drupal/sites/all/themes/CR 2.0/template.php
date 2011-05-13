@@ -1,17 +1,4 @@
 <?php
-function mytheme_regions() {
-  return array(
-	'nav' => t('primary links'),
-	'left' => t('left sidebar'),
-    'right' => t('right sidebar'),
-	'hp_links' => t('homepage links'),
-	'inside_links' => t('inside links'),
-    'content' => t('content'),
-	'continue_shopping' => t('continue shopping button'),
-    'footer' => t('footer'),  
-  );
-}
-
 function phptemplate_body_attributes($is_front = false, $layout = 'none') {
 
   if ($is_front) {
