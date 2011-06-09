@@ -524,6 +524,10 @@ form#views-exposed-form-news-and-resources2-page-1 {
 	margin-bottom: 25px;
 }
 
+.view-news-and-resources2 a b {
+	color: #949843;
+}
+
 select#edit-tid {
 	margin-top: 4px;
 }
