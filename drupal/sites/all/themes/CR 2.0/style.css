@@ -532,6 +532,11 @@ select#edit-tid {
 	margin-top: 4px;
 }
 
+.jcarousel-skin-default {
+	width: 148px;
+	height: auto;
+}
+
 .jcarousel-skin-default .jcarousel-clip-horizontal,
 .jcarousel-skin-default .jcarousel-container-horizontal {
 	width: 132px;
@@ -540,6 +545,13 @@ select#edit-tid {
 .jcarousel-skin-default .jcarousel-container-horizontal {
 	padding: 8px;
 	height: auto;
+}
+
+.jcarousel-skin-default .jcarousel-item-horizontal, 
+.jcarousel-skin-default .jcarousel-item-horizontal .views-field-body,
+.jcarousel-skin-default .jcarousel-item-horizontal .views-field-body .field-content{
+	margin: 0;
+	width: 132px; 
 }
 
 .jcarousel-skin-default .jcarousel-item-horizontal {
