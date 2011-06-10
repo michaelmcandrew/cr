@@ -93,6 +93,10 @@ h1 a {
 	padding-bottom: 15px;
 }
 
+#rightCol #block-views-quotes-block_1 {
+	padding-bottom: 0;
+}
+
 #leftCol h2, #rightCol h2, #nav li a, #hpLinks li a span, #pageLinks li a span{	
 	color: #fff;	
 	text-transform: uppercase;
