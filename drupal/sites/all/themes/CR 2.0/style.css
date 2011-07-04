@@ -181,6 +181,7 @@ input.form-submit {
 	width: 100%;
 	margin-bottom: 16px;
 	background-color: #90a7bb;
+	position: relative;
 }
 
 #nav li {
@@ -227,6 +228,19 @@ input.form-submit {
 	display: block;
 	font-size: 1.1em;
 	text-transform: none;
+}
+ a.twitterLink {
+	width: 34px;
+	height: 26px;
+	display: block;
+	position: absolute;
+	right: 16px;
+	top: 6px;
+	text-indent: -8888px;
+	font-size: 0;
+	line-height: 0;
+	background: url(images/twitter.png) no-repeat 0 0;
+	cursor: pointer;
 }
 
 #main {
