@@ -104,7 +104,7 @@
 			<div id="rightSide">
 				<div id="nav">
 					<?php print $nav; ?>
-					<a href="http://www.google.com" class="twitterLink">Follow us on twitter</a>
+					<!-- <a href="http://www.google.com" class="twitterLink">Follow us on twitter</a> -->
 				</div>
 				<div id="main">
 					<!--drupal features-->
