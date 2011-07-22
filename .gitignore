@@ -21,3 +21,6 @@ drupal/google*.html
 
 *.zip
 !drupal/sites/all/modules/civicrm/packages/jquery/themes/blue/blue.zip
+
+# 2011-06-22 ML
+bra
