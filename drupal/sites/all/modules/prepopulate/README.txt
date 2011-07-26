@@ -1,4 +1,3 @@
-$Id: README.txt,v 1.2 2008/03/12 21:17:50 add1sun Exp $
 
 PREPOPULATE MODULE
 ==================

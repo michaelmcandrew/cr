@@ -1,4 +1,3 @@
-$Id: USAGE.txt,v 1.6 2010/08/24 05:30:58 brauerranch Exp $
 
 See README.txt for a description of this module.
 See this documentation online at http://drupal.org/node/228167.

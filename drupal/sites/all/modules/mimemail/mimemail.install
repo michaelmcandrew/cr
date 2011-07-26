@@ -1,4 +1,9 @@
-<?php /* $Id: mimemail.install,v 1.1.2.1 2010/10/30 18:00:24 sgabe Exp $ */
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Mime Mail module.
+ */
 
 /**
  * Implementation of hook_disable().

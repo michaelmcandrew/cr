@@ -1,11 +1,11 @@
-# Hungarian translation of Computed Field (6.x-1.0-beta3)
-# Copyright (c) 2009 by the Hungarian translation team
+# Hungarian translation of Computed Field (6.x-1.0-beta4)
+# Copyright (c) 2010 by the Hungarian translation team
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Computed Field (6.x-1.0-beta3)\n"
-"POT-Creation-Date: 2009-12-01 20:37+0000\n"
-"PO-Revision-Date: 2009-12-01 12:25+0000\n"
+"Project-Id-Version: Computed Field (6.x-1.0-beta4)\n"
+"POT-Creation-Date: 2010-10-17 16:15+0000\n"
+"PO-Revision-Date: 2010-10-17 16:15+0000\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -32,8 +32,6 @@ msgstr ""
 "értékét a field_a és field_b mezők összegére: "
 msgid "Display Format"
 msgstr "Megjelenítési forma"
-msgid "Store using the database settings below"
-msgstr "Tárolás az alábbi adatbázis beállításokat használva"
 msgid "Database Storage Settings"
 msgstr "Adatbázisban tárolás beállításai"
 msgid "Data Type"
@@ -100,3 +98,7 @@ msgstr ""
 "@display_func()."
 msgid "This field is computed using @display_func()."
 msgstr "A mező értékét a @display_func() függvény adja."
+msgid "Store using the database settings below (required for Views use)"
+msgstr ""
+"Tárolás az alábbi adatbázis beállításokkal (a <em>Views</em> "
+"használatához szükséges)"

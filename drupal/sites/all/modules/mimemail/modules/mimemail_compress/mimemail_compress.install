@@ -1,6 +1,9 @@
 <?php
 
-// $Id: mimemail_compress.install,v 1.1.2.2 2010/10/30 18:00:24 sgabe Exp $
+/**
+ * @file
+ * Install, update and uninstall functions for the Mime Mail Compress module.
+ */
 
 /**
  * Implementation of hook_requirements().
