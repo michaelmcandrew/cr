@@ -1,5 +1,4 @@
-<?php 
-// $Id: mimemail-message.tpl.php,v 1.3.2.2 2010/10/30 18:00:24 sgabe Exp $
+<?php
 
 /**
  * @file
@@ -10,6 +9,7 @@
  * specific mail.
  *
  * Available variables:
+ * - $recipient: The recipient of the message
  * - $subject: The message subject
  * - $body: The message body
  * - $css: Internal style sheets

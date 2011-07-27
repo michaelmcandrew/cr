@@ -1,5 +1,4 @@
 <?php
-// $Id: index.php,v 1.94 2007/12/26 08:46:48 dries Exp $
 
 /**
  * @file
@@ -34,5 +33,6 @@ if (is_int($return)) {
 elseif (isset($return)) {
   // Print any value (including an empty string) except NULL or undefined:
   print theme('page', $return);
-} ?>
+}
 
+drupal_page_footer();

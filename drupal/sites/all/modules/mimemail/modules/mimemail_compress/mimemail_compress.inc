@@ -1,4 +1,4 @@
-<?php // $Id: mimemail_compress.inc,v 1.4.2.4 2011/01/18 15:09:45 sgabe Exp $
+<?php
 
 /**
  * @file
@@ -219,7 +219,7 @@ class mimemail_compress {
       $css_styles[trim($key)] = trim($value);
     }
     return $css_styles;
-	}
+  }
 
   // Get the full path to a DOM node.
   // @see http://stackoverflow.com/questions/2643533/php-getting-xpath-of-a-domnode

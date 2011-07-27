@@ -1,4 +1,4 @@
-<?php // $Id: mimemail.rules_forms.inc,v 1.3.2.4 2010/11/13 09:53:25 sgabe Exp $
+<?php
 
 /**
  * @file
@@ -12,12 +12,18 @@
  * Action "Send an HTML mail to a user" configuration form.
  */
 function mimemail_rules_action_mail_to_user_form($settings = array(), &$form) {
-  $settings += array('from' => '', 'subject' => '', 'message_html' => '', 'message_plaintext' => '', 'attachments' => '');
+  $settings += array('sender' => '', 'from' => '', 'subject' => '', 'message_html' => '', 'message_plaintext' => '', 'attachments' => '');
+  $form['settings']['sender'] = array(
+     '#type' => 'textfield',
+    '#title' => t('Sender name'),
+    '#default_value' => $settings['sender'],
+    '#description' => t("The sender's name. Leave it empty to use the site-wide configured name."),
+  );
   $form['settings']['from'] = array(
     '#type' => 'textfield',
-    '#title' => t('Sender'),
+    '#title' => t('Sender e-mail address'),
     '#default_value' => $settings['from'],
-    '#description' => t("The mail's from address. Leave it empty to use the site-wide configured address."),
+    '#description' => t("The sender's address. Leave it empty to use the site-wide configured address."),
   );
   $form['settings']['subject'] = array(
     '#type' => 'textfield',
@@ -25,7 +31,7 @@ function mimemail_rules_action_mail_to_user_form($settings = array(), &$form) {
     '#default_value' => $settings['subject'],
     '#description' => t("The mail's subject."),
   );
-  $form['settings']['message_html'] = array(
+  $form['settings']['message_html_filter']['message_html'] = array(
     '#type' => 'textarea',
     '#title' => t('HTML message'),
     '#default_value' => $settings['message_html'],
@@ -43,6 +49,8 @@ function mimemail_rules_action_mail_to_user_form($settings = array(), &$form) {
     '#default_value' => $settings['attachments'],
     '#description' => t('A list of attachments, one file per line like [mimetype]:[path] e.g. "image/png:/files/images/mypic.png".'),
   );
+
+  $form['settings']['message_html_filter']['format'] = filter_form(variable_get('mimemail_format', FILTER_FORMAT_DEFAULT));
 }
 
 /**
@@ -75,6 +83,36 @@ function mimemail_rules_action_mail_form($settings = array(), &$form) {
     '#weight' => 0,
   );
   mimemail_rules_action_mail_to_user_form($settings, $form);
+}
+
+/**
+ * Handle submission for action "Send an HTML mail to a user" configuration form.
+ */
+function mimemail_rules_action_mail_submit(&$settings, $form, $form_state) {
+  mimemail_rules_action_form_submit(&$settings, $form, $form_state);
+}
+
+/**
+ * Handle submission for action "Send an HTML mail to an arbitrary mail address" configuration form.
+ */
+function mimemail_rules_action_mail_to_user_submit(&$settings, $form, $form_state) {
+  mimemail_rules_action_form_submit(&$settings, $form, $form_state);
+}
+
+/**
+ * Handle submission for action "Send an HTML mail to all users of a role" configuration form.
+ */
+function mimemail_rules_action_mail_to_users_of_role_submit(&$settings, $form, $form_state) {
+  mimemail_rules_action_form_submit(&$settings, $form, $form_state);
+}
+
+/**
+ * Handle submission for action configuration forms.
+ */
+function mimemail_rules_action_form_submit(&$settings, $form, $form_state) {
+  // Unwrap the HTML message from the input filter wrapper.
+  $settings['message_html'] = $settings['message_html_filter']['message_html'];
+  unset($settings['message_html_filter']);
 }
 
 /**

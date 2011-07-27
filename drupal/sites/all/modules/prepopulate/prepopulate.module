@@ -1,5 +1,4 @@
 <?php
-// $Id: prepopulate.module,v 1.17 2010/08/18 22:20:07 brauerranch Exp $
 
 /**
  * @file
@@ -57,9 +56,10 @@ function prepopulate_after_build($form, &$form_state) {
  *   String or array. Value(s) to be applied to the element.
  */
 function _prepopulate_request_walk(&$form, &$requestslice) {
+  $limited_types = array('value', 'hidden', 'button', 'image_button');
   if (is_array($requestslice)) {
     foreach (array_keys($requestslice) as $requestvar) {
-      if (element_child($requestvar) && !is_null($form[$requestvar]) && $form[$requestvar]['#type'] != "value") {
+      if (element_child($requestvar) && !is_null($form[$requestvar]) && !in_array($form[$requestvar]['#type'], $limited_types)) {
         if (!isset($form[$requestvar]['#access']) || $form[$requestvar]['#access'] != FALSE) {
           _prepopulate_request_walk($form[$requestvar], $requestslice[$requestvar]);
         }
@@ -71,7 +71,11 @@ function _prepopulate_request_walk(&$form, &$requestslice) {
     }
   }
   else {
-    $form['#default_value'] = $requestslice;
-    $form['#value'] = $requestslice;
+    if ($form['#type'] == 'markup' || empty($form['#type']) ) {
+      $form['#value'] = check_plain($requestslice);  
+    }
+    else {
+      $form['#value'] = $requestslice;
+    }
   }
 }
