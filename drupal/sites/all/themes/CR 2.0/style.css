@@ -530,11 +530,15 @@ form#uc-paypal-ec-form {
 	border: 1px solid #ABB037;
 }
 
-div#block-cr_calc-0 div.content, 
 div#block-block-1 div.content img, 
 div#block-block-2 div.content img {
 	background-color: #ABB037;
 	color: #fff;
+	padding: 6px;
+}
+
+div#block-cr_calc-0 div.content { 
+	border: 2px solid #ABB037;
 	padding: 6px;
 }
 
