@@ -133,7 +133,7 @@
 				<div class="clear"></div>
 			</div>
 			<div id="footer">
-				<?php print $nav; ?>
+				<?php print $footer; ?>
 				<span><?php print $footer_message; ?></span>
 			</div>	
 		<?php print $closure; ?>
